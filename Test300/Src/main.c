@@ -170,7 +170,7 @@ int main(void)
 	  }
 
 	  if (adc_dma_error_occured!=0) {
-		  printf("error\r\n");
+		  printf("error occured\r\n");
 	  }
 
 //	  printf("ADC1 = %ld   ADC2 = %ld\r\n",adc[0], adc[1]);
