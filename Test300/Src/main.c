@@ -156,7 +156,7 @@ int main(void)
 	  adc_dma_results_available = 0;
 	  adc_dma_error_occured = 0;
 
-	  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 2);
+	  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 3);
 	  printf("\r\nHAL_ADC_Start_DMA: rc = %d\r\n",rc);
 
 	  uint32_t t = HAL_GetTick();
@@ -174,7 +174,7 @@ int main(void)
 	  }
 
 //	  printf("ADC1 = %ld   ADC2 = %ld\r\n",adc[0], adc[1]);
-	  printf("ADC1 = %d   ADC2 = %d\r\n",adc[0], adc[1]);
+	  printf("TEMP = %d   ADC5 = %d   ADC4 = %d\r\n",adc[0], adc[1], adc[2]);
 
 
   /* USER CODE END WHILE */
@@ -258,7 +258,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 2;
+  hadc1.Init.NbrOfConversion = 3;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -280,6 +280,15 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = 2;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_4;
+  sConfig.Rank = 3;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
