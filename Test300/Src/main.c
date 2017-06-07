@@ -139,6 +139,10 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  int i,j;
+	  uint32_t s[16];
+	  uint16_t adc[16];
+	  uint32_t t, dt;
 
 	  GPIO_PinState x = HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
@@ -146,35 +150,50 @@ int main(void)
 	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 
 
+	  for (i = 0; i<16; i++) s[i]=0;
 
-	  uint16_t adc[16];
-	  adc[0]=0;
-	  adc[1]=0;
-	  adc[2]=0;
-	  adc[3]=0;
+	  for (j=0; j<16; j++) {
+		  for (i = 0; i<16; i++) adc[i]=0;
 
-	  adc_dma_results_available = 0;
-	  adc_dma_error_occured = 0;
+		  adc_dma_results_available = 0;
+		  adc_dma_error_occured = 0;
 
-	  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 3);
-	  printf("\r\nHAL_ADC_Start_DMA: rc = %d\r\n",rc);
-
-	  uint32_t t = HAL_GetTick();
-	  uint32_t dt = 0;
-
-	  while ((adc_dma_results_available==0)&&(dt<1000)) {
-		  if ((HAL_GetTick()-t)>1000) {
-			  printf("timeout occured\r\n");
+		  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 3);
+		  if (rc!=0) {
+			  printf("\r\nHAL_ADC_Start_DMA: rc = %d\r\n",rc);
 			  break;
-		  }
-	  }
+		  	  }
 
-	  if (adc_dma_error_occured!=0) {
-		  printf("error occured\r\n");
-	  }
+		  t = HAL_GetTick();
+		  dt = 0;
+
+		  while ((adc_dma_results_available==0)&&(dt<1000)) {
+			  dt = HAL_GetTick()-t;
+			  if (dt>1000) {
+				  printf("timeout occured\r\n");
+				  adc_dma_error_occured = 10;
+				  break;
+			  	  }
+		  	  }
+
+		  if (adc_dma_error_occured!=0) {
+			  printf("error occured\r\n");
+			  break;
+	  	  	  }
 
 //	  printf("ADC1 = %ld   ADC2 = %ld\r\n",adc[0], adc[1]);
-	  printf("TEMP = %d   ADC5 = %d   ADC4 = %d\r\n",adc[0], adc[1], adc[2]);
+//	  printf("TEMP = %d   ADC5 = %d   ADC4 = %d\r\n",adc[0], adc[1], adc[2]);
+
+		  for (i = 0; i<8; i++) s[i] = s[i] + (uint32_t)adc[i];
+	  	  }
+
+
+	  for (i = 0; i<8; i++) {
+//		  double h = ((double)(s[i]))/16.0;
+		  printf("%6ld  ",s[i]);
+	  	  }
+
+	  printf("\r\n");
 
 
   /* USER CODE END WHILE */
@@ -280,6 +299,7 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_5;
   sConfig.Rank = 2;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
