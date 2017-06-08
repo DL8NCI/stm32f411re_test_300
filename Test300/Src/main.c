@@ -131,7 +131,25 @@ int main(void)
 
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
-
+/* Pinbelegung
+ *
+ * Funktion   Arduino           morpho
+ * IN0:	PA0 - CN8-1 (A0)		CN7-28 (PA0)
+ * IN1:	PA1 - CN8-2 (A1)		CN7-30 (PA1)
+ * IN4:	PA4 - CN8-3 (A2)		CN7-32 (PA4)
+ * IN5: PA5 - CN5-6 (D13)		CN10-11 (PA5)
+ * IN6: PA6 - CN5-5 (D12)		CN10-13 (PA6)
+ * IN7:	PA7 - CN5-4 (D11)		CN10-15 (PA7)
+ * IN8:	PB0 - CN8-4 (A3)		CN7-34 (PB0)
+ * IN9: PB1						CN10-24 (PB1)
+ * IN10:PC0 - CN8-6 (A5)		CN7-38 (PC0/PB8)
+ * IN11:PC1 - CN8-5 (A4)		CN7-36 (PC1/PB9)
+ * IN12:PC2						CN7-35 (PC2)
+ * IN13:PC3						CN7-37 (PC3)
+ * IN14:PC4						CN10-34 (PC4)
+ * IN15:PC5						CN10-6 (PC5)
+ *
+ */
 
   /* USER CODE END 2 */
 
@@ -140,8 +158,8 @@ int main(void)
   while (1)
   {
 	  int i,j;
-	  uint32_t s[16];
-	  uint16_t adc[16];
+	  uint32_t s[10];
+	  uint16_t adc[10];
 	  uint32_t t, dt;
 
 	  GPIO_PinState x = HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13);
@@ -150,15 +168,15 @@ int main(void)
 	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 
 
-	  for (i = 0; i<16; i++) s[i]=0;
+	  for (i = 0; i<10; i++) s[i]=0;
 
 	  for (j=0; j<16; j++) {
-		  for (i = 0; i<16; i++) adc[i]=0;
+		  for (i = 0; i<10; i++) adc[i]=0;
 
 		  adc_dma_results_available = 0;
 		  adc_dma_error_occured = 0;
 
-		  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 3);
+		  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 10);
 		  if (rc!=0) {
 			  printf("\r\nHAL_ADC_Start_DMA: rc = %d\r\n",rc);
 			  break;
@@ -184,11 +202,11 @@ int main(void)
 //	  printf("ADC1 = %ld   ADC2 = %ld\r\n",adc[0], adc[1]);
 //	  printf("TEMP = %d   ADC5 = %d   ADC4 = %d\r\n",adc[0], adc[1], adc[2]);
 
-		  for (i = 0; i<8; i++) s[i] = s[i] + (uint32_t)adc[i];
+		  for (i = 0; i<10; i++) s[i] = s[i] + (uint32_t)adc[i];
 	  	  }
 
 
-	  for (i = 0; i<8; i++) {
+	  for (i = 0; i<10; i++) {
 //		  double h = ((double)(s[i]))/16.0;
 		  printf("%6ld  ",s[i]);
 	  	  }
@@ -277,7 +295,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-  hadc1.Init.NbrOfConversion = 3;
+  hadc1.Init.NbrOfConversion = 10;
   hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
@@ -287,9 +305,9 @@ static void MX_ADC1_Init(void)
 
     /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
     */
-  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -297,9 +315,8 @@ static void MX_ADC1_Init(void)
 
     /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
     */
-  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 2;
-  sConfig.SamplingTime = ADC_SAMPLETIME_56CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -309,6 +326,69 @@ static void MX_ADC1_Init(void)
     */
   sConfig.Channel = ADC_CHANNEL_4;
   sConfig.Rank = 3;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_5;
+  sConfig.Rank = 4;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_6;
+  sConfig.Rank = 5;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_7;
+  sConfig.Rank = 6;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_8;
+  sConfig.Rank = 7;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_10;
+  sConfig.Rank = 8;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_11;
+  sConfig.Rank = 9;
+  if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+    /**Configure for the selected ADC regular channel its corresponding rank in the sequencer and its sample time. 
+    */
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
+  sConfig.Rank = 10;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -366,7 +446,9 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOH_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
 }
 
