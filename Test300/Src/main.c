@@ -177,7 +177,7 @@ int main(void)
 		  s2[i]=0.0;
 	  	  }
 
-	  for (j=0; j<16; j++) {
+	  for (j=0; j<N_ITERATIONS; j++) {
 		  for (i = 0; i<10; i++) adc[i]=0;
 
 		  adc_dma_results_available = 0;
@@ -215,9 +215,8 @@ int main(void)
 
 
 	  for (i = 0; i<10; i++) {
-//		  double h = ((double)(s[i]))/16.0;
-		  double h = s[i]/16;
-		  printf("%8.2f (%7.2f)  ",h, sqrt(s2[i]/16-h*h));
+		  double h = s[i]/N_ITERATIONS;
+		  printf("%8.2f (%7.2f)  ",h, sqrt(s2[i]/N_ITERATIONS-h*h));
 	  	  }
 
 	  printf("\r\n");

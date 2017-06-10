@@ -47,7 +47,7 @@
 /* Private define ------------------------------------------------------------*/
 
 /* USER CODE BEGIN Private defines */
-
+#define N_ITERATIONS 256
 /* USER CODE END Private defines */
 
 void _Error_Handler(char *, int);
