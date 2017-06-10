@@ -42,6 +42,7 @@
 /* USER CODE BEGIN Includes */
 #include  <sys/unistd.h>
 #include <errno.h>
+#include "StdIoConnector.h"
 
 /* USER CODE END Includes */
 
@@ -129,6 +130,9 @@ int main(void)
   __HAL_RCC_USART1_CLK_ENABLE();
   __HAL_RCC_ADC1_CLK_ENABLE();
 
+
+  init(&huart2,&hdma_usart2_tx);
+
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
 /* Pinbelegung
@@ -158,7 +162,8 @@ int main(void)
   while (1)
   {
 	  int i,j;
-	  uint32_t s[10];
+	  double s[10];
+	  double s2[10];
 	  uint16_t adc[10];
 	  uint32_t t, dt;
 
@@ -167,8 +172,10 @@ int main(void)
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 
-
-	  for (i = 0; i<10; i++) s[i]=0;
+	  for (i = 0; i<10; i++) {
+		  s[i]=0.0;
+		  s2[i]=0.0;
+	  	  }
 
 	  for (j=0; j<16; j++) {
 		  for (i = 0; i<10; i++) adc[i]=0;
@@ -199,16 +206,18 @@ int main(void)
 			  break;
 	  	  	  }
 
-//	  printf("ADC1 = %ld   ADC2 = %ld\r\n",adc[0], adc[1]);
-//	  printf("TEMP = %d   ADC5 = %d   ADC4 = %d\r\n",adc[0], adc[1], adc[2]);
-
-		  for (i = 0; i<10; i++) s[i] = s[i] + (uint32_t)adc[i];
+		  for (i = 0; i<10; i++) {
+			  double h = (double)adc[i];
+			  s[i] += h;
+			  s2[i] += h*h;
+		  	  }
 	  	  }
 
 
 	  for (i = 0; i<10; i++) {
 //		  double h = ((double)(s[i]))/16.0;
-		  printf("%6ld  ",s[i]);
+		  double h = s[i]/16;
+		  printf("%8.2f (%7.2f)  ",h, sqrt(s2[i]/16-h*h));
 	  	  }
 
 	  printf("\r\n");
@@ -461,40 +470,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
 	adc_dma_error_occured = 1;
 	}
-
-
-// taken from <http://www.openstm32.org/forumthread1055>
-int _write(int file, char *data, int len) {
-
-	if ((file != STDOUT_FILENO) && (file != STDERR_FILENO)) {
-        errno = EBADF;
-        return -1;
-    	}
-
-//	if (HAL_UART_Transmit_DMA(&huart2, (uint8_t*)data, len)!=HAL_OK) {
-//    if (HAL_UART_Transmit_IT(&huart2, (uint8_t*)data, len)!=HAL_OK) {
-    if (HAL_UART_Transmit(&huart2, (uint8_t*)data, len, 1000)!=HAL_OK) {
-    	errno = EIO;
-    	return -1;
-    	}
-    else return len;
-    }
-
-/*
-int _read(int file, char *data, int len) {
-	if (file != STDIN_FILENO) {
-        errno = EBADF;
-        return -1;
-    	}
-
-    if (HAL_UART_Receive(&huart2, (uint8_t*)data, len, 1000)!=HAL_OK) {
-    	errno = EIO;
-    	return -1;
-    	}
-
-    return len;
-	}
-*/
 
 /* USER CODE END 4 */
 
