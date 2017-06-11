@@ -164,6 +164,7 @@ int main(void)
 	  int i,j;
 	  double s[10];
 	  double s2[10];
+	  uint16_t xmin[10], xmax[10];
 	  uint16_t adc[10];
 	  uint32_t t, dt;
 
@@ -175,6 +176,8 @@ int main(void)
 	  for (i = 0; i<10; i++) {
 		  s[i]=0.0;
 		  s2[i]=0.0;
+		  xmin[i]=4095;
+		  xmax[i]=0;
 	  	  }
 
 	  for (j=0; j<N_ITERATIONS; j++) {
@@ -207,16 +210,19 @@ int main(void)
 	  	  	  }
 
 		  for (i = 0; i<10; i++) {
-			  double h = (double)adc[i];
-			  s[i] += h;
-			  s2[i] += h*h;
+			  uint16_t hi = adc[i];
+			  double hd = (double)hi;
+			  s[i] += hd;
+			  s2[i] += hd*hd;
+			  if (hi>xmax[i]) xmax[i]=hi;
+			  if (hi<xmin[i]) xmin[i]=hi;
 		  	  }
 	  	  }
 
 
 	  for (i = 0; i<10; i++) {
 		  double h = s[i]/N_ITERATIONS;
-		  printf("%8.2f (%7.2f)  ",h, sqrt(s2[i]/N_ITERATIONS-h*h));
+		  printf("%7.1f (%5.2f)[%3d]  ",h, sqrt(s2[i]/N_ITERATIONS-h*h),xmax[i]-xmin[i]);
 	  	  }
 
 	  printf("\r\n");
