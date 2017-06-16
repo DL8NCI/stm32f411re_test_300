@@ -6,12 +6,12 @@
  */
 
 #include "StdIoConnector.h"
-#include  <sys/unistd.h>
+#include <sys/unistd.h>
 #include <errno.h>
 
 
 
-void init(UART_HandleTypeDef *_huart, DMA_HandleTypeDef *_hdma_usart_tx ) {
+void STDIOC_init(UART_HandleTypeDef *_huart, DMA_HandleTypeDef *_hdma_usart_tx ) {
 	huart = _huart;
 	hdma_usart_tx = _hdma_usart_tx;
 	status = STDIO_CONNECTOR_STATUS_IDLE;

@@ -40,9 +40,12 @@
 #include "stm32f4xx_hal.h"
 
 /* USER CODE BEGIN Includes */
+#include "math.h"
 #include  <sys/unistd.h>
 #include <errno.h>
 #include "StdIoConnector.h"
+#include "Statistics.h"
+
 
 /* USER CODE END Includes */
 
@@ -131,7 +134,7 @@ int main(void)
   __HAL_RCC_ADC1_CLK_ENABLE();
 
 
-  init(&huart2,&hdma_usart2_tx);
+  STDIOC_init(&huart2,&hdma_usart2_tx);
 
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
@@ -155,6 +158,9 @@ int main(void)
  *
  */
 
+  TStat st[N_CHANNELS];
+
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -162,23 +168,16 @@ int main(void)
   while (1)
   {
 	  int i,j;
-	  double s[10];
-	  double s2[10];
-	  uint16_t xmin[10], xmax[10];
 	  uint16_t adc[10];
 	  uint32_t t, dt;
+
 
 	  GPIO_PinState x = HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 
-	  for (i = 0; i<10; i++) {
-		  s[i]=0.0;
-		  s2[i]=0.0;
-		  xmin[i]=4095;
-		  xmax[i]=0;
-	  	  }
+	  for (i = 0; i<10; i++) STAT_init(&st[i]);
 
 	  for (j=0; j<N_ITERATIONS; j++) {
 		  for (i = 0; i<10; i++) adc[i]=0;
@@ -209,22 +208,18 @@ int main(void)
 			  break;
 	  	  	  }
 
-		  for (i = 0; i<10; i++) {
-			  uint16_t hi = adc[i];
-			  double hd = (double)hi;
-			  s[i] += hd;
-			  s2[i] += hd*hd;
-			  if (hi>xmax[i]) xmax[i]=hi;
-			  if (hi<xmin[i]) xmin[i]=hi;
-		  	  }
+		  for (i = 0; i<10; i++) STAT_add(&st[i],adc[i]);
 	  	  }
 
 
 	  for (i = 0; i<10; i++) {
-		  double h = s[i]/N_ITERATIONS;
-		  printf("%7.1f (%5.2f)[%3d]  ",h, sqrt(s2[i]/N_ITERATIONS-h*h),xmax[i]-xmin[i]);
-	  	  }
+		  double sd = STAT_stdDev(&st[i]);
+		  uint16_t dy = STAT_interval(&st[i]);
 
+		  if (sd>=1000) sd = 999.99;
+		  if (dy>=1000) dy = 999;
+		  printf("%7.1f (%6.2f)[%3d]  ",STAT_meanValue(&st[i]), sd, dy);
+	  	  }
 	  printf("\r\n");
 
 
