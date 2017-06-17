@@ -36,6 +36,7 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
+#include <DataAquisition.h>
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
@@ -58,9 +59,6 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
-volatile int adc_dma_results_available;
-volatile int adc_dma_error_occured;
 
 /* USER CODE END PV */
 
@@ -111,8 +109,8 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
+//  __HAL_RCC_GPIOA_CLK_ENABLE();
+//  __HAL_RCC_GPIOC_CLK_ENABLE();
 
 
   // LED
@@ -167,60 +165,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  int i,j;
-	  uint16_t adc[10];
-	  uint32_t t, dt;
-
+	  int i;
 
 	  GPIO_PinState x = HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 
-	  for (i = 0; i<10; i++) STAT_init(&st[i]);
-
-	  for (j=0; j<N_ITERATIONS; j++) {
-		  for (i = 0; i<10; i++) adc[i]=0;
-
-		  adc_dma_results_available = 0;
-		  adc_dma_error_occured = 0;
-
-		  HAL_StatusTypeDef rc = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc, 10);
-		  if (rc!=0) {
-			  printf("\r\nHAL_ADC_Start_DMA: rc = %d\r\n",rc);
-			  break;
-		  	  }
-
-		  t = HAL_GetTick();
-		  dt = 0;
-
-		  while ((adc_dma_results_available==0)&&(dt<1000)) {
-			  dt = HAL_GetTick()-t;
-			  if (dt>1000) {
-				  printf("timeout occured\r\n");
-				  adc_dma_error_occured = 10;
-				  break;
-			  	  }
-		  	  }
-
-		  if (adc_dma_error_occured!=0) {
-			  printf("error occured\r\n");
-			  break;
-	  	  	  }
-
-		  for (i = 0; i<10; i++) STAT_add(&st[i],adc[i]);
+	  HAL_StatusTypeDef rc = DAQU_startADC(&hadc1, N_ITERATIONS, N_CHANNELS, st);
+	  if (rc==0) {
+  		  for (i = 0; i<N_CHANNELS; i++) STAT_print(&st[i]);
+  		  printf("\r\n");
 	  	  }
-
-
-	  for (i = 0; i<10; i++) {
-		  double sd = STAT_stdDev(&st[i]);
-		  uint16_t dy = STAT_interval(&st[i]);
-
-		  if (sd>=1000) sd = 999.99;
-		  if (dy>=1000) dy = 999;
-		  printf("%7.1f (%6.2f)[%3d]  ",STAT_meanValue(&st[i]), sd, dy);
-	  	  }
-	  printf("\r\n");
+	  else DAQU_printErrorInfo(rc);
 
 
   /* USER CODE END WHILE */
@@ -462,14 +419,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	adc_dma_results_available = 1;
-	}
-
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
-	adc_dma_error_occured = 1;
-	}
 
 /* USER CODE END 4 */
 

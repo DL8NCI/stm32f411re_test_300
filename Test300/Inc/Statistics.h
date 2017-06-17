@@ -25,6 +25,7 @@ void STAT_add(TStat *st, uint16_t x);
 double STAT_meanValue(TStat *st);
 double STAT_stdDev(TStat *st);
 uint16_t STAT_interval(TStat *st);
+void STAT_print(TStat *st);
 
 
 

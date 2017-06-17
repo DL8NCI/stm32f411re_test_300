@@ -39,3 +39,14 @@ uint16_t STAT_interval(TStat *st) {
 	return (st->max - st->min);
 	}
 
+void STAT_print(TStat *st) {
+
+	double sd = STAT_stdDev(st);
+	uint16_t dy = STAT_interval(st);
+
+	if (sd>=1000) sd = 999.99;
+	if (dy>=1000) dy = 999;
+	printf("%7.1f (%6.2f)[%3d]  ",STAT_meanValue(st), sd, dy);
+	}
+
+
