@@ -109,10 +109,6 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-//  __HAL_RCC_GPIOA_CLK_ENABLE();
-//  __HAL_RCC_GPIOC_CLK_ENABLE();
-
-
   // LED
   GPIO_InitTypeDef itd;
   itd.Mode = GPIO_MODE_OUTPUT_PP;
@@ -127,10 +123,6 @@ int main(void)
   itd.Pull = GPIO_NOPULL;
   itd.Speed = GPIO_SPEED_HIGH;
   HAL_GPIO_Init(GPIOC,&itd);
-
-  __HAL_RCC_USART1_CLK_ENABLE();
-  __HAL_RCC_ADC1_CLK_ENABLE();
-
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
 
