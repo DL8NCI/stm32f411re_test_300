@@ -7,6 +7,7 @@
 
 
 #include <DataAquisition.h>
+#include "ArduinoPins.h"
 
 
 static uint16_t adc[10];
@@ -29,6 +30,8 @@ HAL_StatusTypeDef DAQU_startADC(ADC_HandleTypeDef* hadc, uint16_t n_iter, uint8_
 		adc_dma_results_available = 0;
 		adc_dma_error_occured = 0;
 
+		// Pin D2 geht auf 1 bei Beginn der Wandlungen und geht am Ende auf 0 in ISR
+		HAL_GPIO_WritePin(D2_PORT,D2_PIN,GPIO_PIN_SET);
 		rc = HAL_ADC_Start_DMA(hadc, (uint32_t*)adc, 10);
 		if (rc!=0) return rc;
 
@@ -69,6 +72,7 @@ void DAQU_printErrorInfo(HAL_StatusTypeDef rc) {
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
+	HAL_GPIO_WritePin(D2_PORT,D2_PIN,GPIO_PIN_RESET);
 	adc_dma_results_available = 1;
 	}
 

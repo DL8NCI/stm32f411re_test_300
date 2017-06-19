@@ -36,7 +36,6 @@
   ******************************************************************************
   */
 /* Includes ------------------------------------------------------------------*/
-#include <DataAquisition.h>
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
@@ -46,6 +45,7 @@
 #include <errno.h>
 #include "StdIoConnector.h"
 #include "Statistics.h"
+#include "ArduinoPins.h"
 
 
 /* USER CODE END Includes */
@@ -53,6 +53,8 @@
 /* Private variables ---------------------------------------------------------*/
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
+
+TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
@@ -68,6 +70,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_TIM3_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -106,25 +109,52 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
+  MX_TIM3_Init();
 
   /* USER CODE BEGIN 2 */
 
-  // LED
+
   GPIO_InitTypeDef itd;
+
+  // some common setting for output pins:
   itd.Mode = GPIO_MODE_OUTPUT_PP;
-  itd.Pin = GPIO_PIN_5;
   itd.Pull = GPIO_NOPULL;
   itd.Speed = GPIO_SPEED_HIGH;
-  HAL_GPIO_Init(GPIOA,&itd);
+
+  // LED
+  itd.Pin = LED_PIN;
+  HAL_GPIO_Init(LED_PORT,&itd);
+
+  // D2 - PA10 as diagnostics output
+  itd.Pin = D2_PIN;
+  HAL_GPIO_Init(D2_PORT,&itd);
+
+   // D3 - PB3 as diagnostics output
+  itd.Pin = D3_PIN;
+  HAL_GPIO_Init(D3_PORT,&itd);
+
+  // D4 - PB5 as diagnostics output
+  itd.Pin = D4_PIN;
+  HAL_GPIO_Init(D4_PORT,&itd);
+
+  // D5 - PB4 as diagnostics output
+  itd.Pin = D5_PIN;
+  HAL_GPIO_Init(D5_PORT,&itd);
+
+
+  // some common settings for input pins
+  itd.Mode = GPIO_MODE_INPUT;
+  itd.Pull = GPIO_NOPULL;
+  itd.Speed = GPIO_SPEED_HIGH;
 
   // User-Key
-  itd.Mode = GPIO_MODE_INPUT;
-  itd.Pin = GPIO_PIN_13;
-  itd.Pull = GPIO_NOPULL;
-  itd.Speed = GPIO_SPEED_HIGH;
-  HAL_GPIO_Init(GPIOC,&itd);
+  itd.Pin = USER_KEY_PIN;
+  HAL_GPIO_Init(USER_KEY_PORT,&itd);
+
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
+
+  HAL_TIM_Base_Start_IT(&htim3);
 
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
@@ -159,10 +189,10 @@ int main(void)
   {
 	  int i;
 
-	  GPIO_PinState x = HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13);
+	  GPIO_PinState x = HAL_GPIO_ReadPin(USER_KEY_PORT,USER_KEY_PIN);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
-	  HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
+	  HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
 
 	  HAL_StatusTypeDef rc = DAQU_startADC(&hadc1, N_ITERATIONS, N_CHANNELS, st);
 	  if (rc==0) {
@@ -354,6 +384,38 @@ static void MX_ADC1_Init(void)
 
 }
 
+/* TIM3 init function */
+static void MX_TIM3_Init(void)
+{
+
+  TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_MasterConfigTypeDef sMasterConfig;
+
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 0;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 959;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* USART2 init function */
 static void MX_USART2_UART_Init(void)
 {
@@ -411,6 +473,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  {
+	HAL_GPIO_TogglePin(D3_PORT,D3_PIN);
+	}
 
 /* USER CODE END 4 */
 
