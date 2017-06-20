@@ -46,6 +46,7 @@
 #include "StdIoConnector.h"
 #include "Statistics.h"
 #include "ArduinoPins.h"
+#include "DataAquisition.h"
 
 
 /* USER CODE END Includes */
@@ -54,6 +55,8 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+SPI_HandleTypeDef hspi2;
+
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
@@ -61,7 +64,8 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-
+uint8_t spi_out[3] = { 0x06, 0x00, 0x00 }; // ch0 in single ended mode
+uint8_t spi_in[3];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,6 +75,7 @@ static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_SPI2_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -110,6 +115,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   MX_TIM3_Init();
+  MX_SPI2_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -141,6 +147,11 @@ int main(void)
   itd.Pin = D5_PIN;
   HAL_GPIO_Init(D5_PORT,&itd);
 
+  // PB2: !CS for MCP3204 (12 bit ADC)
+  itd.Pin = CS_3204_PIN;
+  HAL_GPIO_Init(CS_3204_PORT,&itd);
+  // deselect MCP3204
+  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_SET);
 
   // some common settings for input pins
   itd.Mode = GPIO_MODE_INPUT;
@@ -179,6 +190,7 @@ int main(void)
  */
 
   TStat st[N_CHANNELS];
+  TStat st3204[4];
 
 
   /* USER CODE END 2 */
@@ -200,6 +212,21 @@ int main(void)
   		  printf("\r\n");
 	  	  }
 	  else DAQU_printErrorInfo(rc);
+
+	  STAT_init(&st3204[0]);
+	  // select MCP3204, external ADC
+	  for (uint16_t i_iter=0; i_iter<N_ITERATIONS; i_iter++) {
+		  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_RESET);
+		  HAL_StatusTypeDef rc1 = HAL_SPI_TransmitReceive(&hspi2, spi_out, spi_in, 3, 100);
+		  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_SET);
+		  uint16_t y = ((((uint16_t)spi_in[1])<<8)|spi_in[2]) & 0x0fff;
+		  if (rc1==HAL_OK) STAT_add(&st3204[0],y);
+		  else DAQU_printErrorInfo(rc1);
+	  	  }
+	  // deselect MCP3204, external ADC
+	  STAT_print(&st3204[0]);
+	  printf("\r\n");
+
 
 
   /* USER CODE END WHILE */
@@ -378,6 +405,29 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = 10;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* SPI2 init function */
+static void MX_SPI2_Init(void)
+{
+
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }

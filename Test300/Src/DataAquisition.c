@@ -13,13 +13,15 @@
 static uint16_t adc[10];
 static volatile int adc_dma_results_available;
 static volatile int adc_dma_error_occured;
+static uint32_t t;
+
 
 
 HAL_StatusTypeDef DAQU_startADC(ADC_HandleTypeDef* hadc, uint16_t n_iter, uint8_t n_chan, TStat *st) {
 
 	uint8_t i_chan;
 	uint16_t i_iter;
-	uint32_t t, dt;
+	uint32_t dt;
 	HAL_StatusTypeDef rc;
 
 	for (i_chan=0; i_chan<n_chan; i_chan++) STAT_init(&st[i_chan]);
