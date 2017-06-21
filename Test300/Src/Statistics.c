@@ -49,4 +49,10 @@ void STAT_print(TStat *st) {
 	printf("%7.1f (%6.2f)[%3d]  ",STAT_meanValue(st), sd, dy);
 	}
 
+void STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
+	double u = STAT_meanValue(st)*uRef/(double)fullScale;
+	double du = STAT_stdDev(st)*uRef/(double)fullScale;
+	printf("%7.4f V \302\261 %5.1f mV   ",u, du*1000.0);
+	}
+
 

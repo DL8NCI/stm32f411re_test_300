@@ -208,8 +208,8 @@ int main(void)
 
 	  HAL_StatusTypeDef rc = DAQU_startADC(&hadc1, N_ITERATIONS, N_CHANNELS, st);
 	  if (rc==0) {
-  		  for (i = 0; i<N_CHANNELS; i++) STAT_print(&st[i]);
-  		  printf("\r\n");
+//  		  for (i = 0; i<N_CHANNELS; i++) STAT_print(&st[i]);
+//  		  printf("\r\n");
 	  	  }
 	  else DAQU_printErrorInfo(rc);
 
@@ -224,7 +224,14 @@ int main(void)
 		  else DAQU_printErrorInfo(rc1);
 	  	  }
 	  // deselect MCP3204, external ADC
-	  STAT_print(&st3204[0]);
+//	  STAT_print(&st3204[0]);
+	  STAT_printVolt(&st3204[0],3.0,4096);		// MCP3204     - ch0 - Volt
+	  STAT_printVolt(&st[0],3.3,4096);			// STM32F411re - ch0 - Volt
+	  STAT_printVolt(&st[1],3.3,4096);			// STM32F411re - ch1 - Volt (gemessene Referenz vom MCP3204)
+	  STAT_print(&st3204[0]);					// MCP3204     - ch0 - cnts
+	  STAT_print(&st[0]);						// STM32F411re - ch0 - cnts
+	  STAT_print(&st[1]);						// STM32F411re - ch0 - cnts (gemessene Referenz vom MCP3204)
+	  STAT_print(&st[9]);						// STM32F411re - Temperatur - cnts
 	  printf("\r\n");
 
 
