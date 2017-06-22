@@ -64,8 +64,8 @@ DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-uint8_t spi_out[3] = { 0x06, 0x00, 0x00 }; // ch0 in single ended mode
-uint8_t spi_in[3];
+uint8_t spi_out[12] = { 0x06, 0x00, 0x00,  0x06, 0x40, 0x00,  0x06, 0x80, 0x00,  0x06, 0xc0, 0x00}; // ch0-ch3 in single ended mode
+uint8_t spi_in[12];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -213,15 +213,19 @@ int main(void)
 	  	  }
 	  else DAQU_printErrorInfo(rc);
 
-	  STAT_init(&st3204[0]);
+	  for(i=0; i<4; i++) STAT_init(&st3204[i]);
 	  // select MCP3204, external ADC
 	  for (uint16_t i_iter=0; i_iter<N_ITERATIONS; i_iter++) {
-		  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_RESET);
-		  HAL_StatusTypeDef rc1 = HAL_SPI_TransmitReceive(&hspi2, spi_out, spi_in, 3, 100);
-		  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_SET);
-		  uint16_t y = ((((uint16_t)spi_in[1])<<8)|spi_in[2]) & 0x0fff;
-		  if (rc1==HAL_OK) STAT_add(&st3204[0],y);
-		  else DAQU_printErrorInfo(rc1);
+		  for (i=0; i<4; i++) {
+			  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_RESET);
+			  HAL_StatusTypeDef rc1 = HAL_SPI_TransmitReceive(&hspi2, &spi_out[3*i], &spi_in[3*i], 3, 100);
+			  HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_SET);
+			  if (rc==HAL_OK) {
+				  uint16_t y = ((((uint16_t)spi_in[1+3*i])<<8)|spi_in[2+3*i]) & 0x0fff;
+				  STAT_add(&st3204[i],y);
+			  	  }
+			  else DAQU_printErrorInfo(rc1);
+		  	  }
 	  	  }
 	  // deselect MCP3204, external ADC
 //	  STAT_print(&st3204[0]);
@@ -231,6 +235,9 @@ int main(void)
 	  STAT_print(&st3204[0]);					// MCP3204     - ch0 - cnts
 	  STAT_print(&st[0]);						// STM32F411re - ch0 - cnts
 	  STAT_print(&st[1]);						// STM32F411re - ch0 - cnts (gemessene Referenz vom MCP3204)
+	  STAT_print(&st3204[1]);					// MCP3204     - ch1 - cnts
+	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts
+	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts
 	  STAT_print(&st[9]);						// STM32F411re - Temperatur - cnts
 	  printf("\r\n");
 
