@@ -55,4 +55,23 @@ void STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
 	printf("%7.4f V \302\261 %5.1f mV   ",u, du*1000.0);
 	}
 
+void STAT_printRH(TStat *st, double uSupp, double T) {
+	const double a1 = 0.0062;
+	const double b1 = 0.16;
+	const double a2 = 0.00216;
+	const double b2 = 1.0546;
+	const double cnt_max = 4096.0;
+	const double uRef = 3.0;
+	const double R1 = 18.0;
+	const double R2 = 10.0;
+
+
+	double RH_c = (b1*cnt_max*R1*uSupp-STAT_meanValue(st)*(R2+R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp);
+
+	double dRH_c = ((-R2-R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp)*STAT_stdDev(st);
+
+	printf("(%4.1f \302\261 %4.1f) %%    ",RH_c, dRH_c);
+
+	}
+
 

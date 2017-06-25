@@ -27,6 +27,7 @@ double STAT_stdDev(TStat *st);
 uint16_t STAT_interval(TStat *st);
 void STAT_print(TStat *st);
 void STAT_printVolt(TStat *st, double uRef, uint16_t fullScale);
+void STAT_printRH(TStat *st, double uSupp, double T);
 
 
 

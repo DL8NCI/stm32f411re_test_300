@@ -191,6 +191,7 @@ int main(void)
 
   TStat st[N_CHANNELS];
   TStat st3204[4];
+  uint8_t k=10;
 
 
   /* USER CODE END 2 */
@@ -234,13 +235,19 @@ int main(void)
 	  STAT_printVolt(&st[1],3.3,4096);			// STM32F411re - ch1 - Volt (gemessene Referenz vom MCP3204)
 	  STAT_print(&st3204[0]);					// MCP3204     - ch0 - cnts
 	  STAT_print(&st[0]);						// STM32F411re - ch0 - cnts
-	  STAT_print(&st[1]);						// STM32F411re - ch0 - cnts (gemessene Referenz vom MCP3204)
+	  STAT_print(&st[1]);						// STM32F411re - ch1 - cnts (gemessene Referenz vom MCP3204)
 	  STAT_print(&st3204[1]);					// MCP3204     - ch1 - cnts
 	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts
-	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts
+	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts (HIH4000)
 	  STAT_print(&st[9]);						// STM32F411re - Temperatur - cnts
+	  STAT_printRH(&st3204[3], 5.0, 25.0);		// MCP3204     - ch3 - RH (via HIH4000)
 	  printf("\r\n");
 
+	  k--;
+	  if (k==0) {
+		  printf("\r\n          3204 - ch0           32F411 - ch0           32F411 - ch1              3204 - ch0           32F411 - ch0           32F411 - ch1             3204 - ch1             3204 - ch2             3204 - ch3          32F411 - temp\r\n");
+		  k=10;
+	  	  }
 
 
   /* USER CODE END WHILE */
