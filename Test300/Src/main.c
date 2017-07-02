@@ -56,6 +56,8 @@
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+I2C_HandleTypeDef hi2c1;
+
 SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim3;
@@ -67,6 +69,10 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* Private variables ---------------------------------------------------------*/
 uint8_t spi_out[12] = { 0x06, 0x00, 0x00,  0x06, 0x40, 0x00,  0x06, 0x80, 0x00,  0x06, 0xc0, 0x00}; // ch0-ch3 in single ended mode
 uint8_t spi_in[12];
+
+struct DAQU_HIH8000_result hih8000_result;
+HAL_StatusTypeDef hih8000_status;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -77,6 +83,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -117,6 +124,7 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM3_Init();
   MX_SPI2_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -211,12 +219,10 @@ int main(void)
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 	  HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
 
+	  hih8000_status = DAQU_start_HIH8000(&hi2c1);
+
 	  HAL_StatusTypeDef rc = DAQU_startADC(&hadc1, N_ITERATIONS, N_CHANNELS, st);
-	  if (rc==0) {
-//  		  for (i = 0; i<N_CHANNELS; i++) STAT_print(&st[i]);
-//  		  printf("\r\n");
-	  	  }
-	  else DAQU_printErrorInfo(rc);
+	  if (rc!=0) DAQU_printErrorInfo(rc);
 
 	  for(i=0; i<4; i++) STAT_init(&st3204[i]);
 	  // select MCP3204, external ADC
@@ -231,6 +237,11 @@ int main(void)
 			  	  }
 			  else DAQU_printErrorInfo(rc1);
 		  	  }
+	  	  }
+
+
+	  if (hih8000_status==HAL_OK) {
+		  hih8000_status = DAQU_read_HIH8000(&hi2c1,&hih8000_result);
 	  	  }
 	  // deselect MCP3204, external ADC
 //	  STAT_print(&st3204[0]);
@@ -332,11 +343,11 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
-	  printf("3204   - ch2:");
+	  printf("3204   - ch2 - 5 V:");
 	  VT100CursorGoto(row,25);
-	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts
+	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts - 5 V
 	  VT100CursorGoto(row,50);
-	  STAT_printVolt(&st3204[2],3.0,4096);		// MCP3204     - ch2 - Volt
+	  STAT_printVolt(&st3204[2],3.0*8.0/4.7,4096);		// MCP3204     - ch2 - Volt
 
 	  row++;
 	  VT100CursorGoto(row,1);
@@ -345,6 +356,30 @@ int main(void)
 	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts (HIH4000)
 	  VT100CursorGoto(row,50);
 	  STAT_printRH(&st3204[3], 5.0, 25.0);		// MCP3204     - ch3 - RH (via HIH4000)
+
+	  if (hih8000_status==HAL_OK) {
+		  row++;
+		  VT100CursorGoto(row,1);
+		  printf("HIH8000      - RH:");
+		  VT100CursorGoto(row,50);
+		  printf("%7.1f %%",DAQU_HIH8000_get_RelativeHumidity(&hih8000_result));
+
+		  row++;
+		  VT100CursorGoto(row,1);
+		  printf("HIH8000      - T:");
+		  VT100CursorGoto(row,50);
+		  printf("%7.1f deg C",DAQU_HIH8000_get_Temperature(&hih8000_result));
+
+		  row++;
+		  VT100CursorGoto(row,1);
+		  printf("HIH8000      - DP:");
+		  VT100CursorGoto(row,50);
+		  printf("%7.1f deg C",DAQU_HIH8000_getDewPointTemperature(&hih8000_result));
+
+	  	  }
+	  else {
+		  row += 3;
+	  }
 
 	  printf("\r\n");
 
@@ -536,6 +571,26 @@ static void MX_ADC1_Init(void)
   sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = 10;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
+/* I2C1 init function */
+static void MX_I2C1_Init(void)
+{
+
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
