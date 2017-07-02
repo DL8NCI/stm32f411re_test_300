@@ -44,9 +44,9 @@ void STAT_print(TStat *st) {
 	double sd = STAT_stdDev(st);
 	uint16_t dy = STAT_interval(st);
 
-	if (sd>=1000) sd = 999.99;
-	if (dy>=1000) dy = 999;
-	printf("%7.1f (%6.2f)[%3d]  ",STAT_meanValue(st), sd, dy);
+	if (sd>=100) sd = 99.99;
+	if (dy>=100) dy = 99;
+	printf("%7.1f (%5.2f)[%2d]  ",STAT_meanValue(st), sd, dy);
 	}
 
 void STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
@@ -62,15 +62,15 @@ void STAT_printRH(TStat *st, double uSupp, double T) {
 	const double b2 = 1.0546;
 	const double cnt_max = 4096.0;
 	const double uRef = 3.0;
-	const double R1 = 18.0;
-	const double R2 = 10.0;
+	const double R1 = 47.0;
+	const double R2 = 33.0;
 
 
 	double RH_c = (b1*cnt_max*R1*uSupp-STAT_meanValue(st)*(R2+R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp);
 
 	double dRH_c = ((-R2-R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp)*STAT_stdDev(st);
 
-	printf("(%4.1f \302\261 %4.1f) %%    ",RH_c, dRH_c);
+	printf("%7.1f %% \302\261 %5.1f %%    ",RH_c, dRH_c);
 
 	}
 

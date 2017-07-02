@@ -47,6 +47,7 @@
 #include "Statistics.h"
 #include "ArduinoPins.h"
 #include "DataAquisition.h"
+#include "VT100.h"
 
 
 /* USER CODE END Includes */
@@ -167,6 +168,8 @@ int main(void)
 
   HAL_TIM_Base_Start_IT(&htim3);
 
+  VT100EraseScreen();
+  VT100CursorHome();
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
 /* Pinbelegung
@@ -192,6 +195,7 @@ int main(void)
   TStat st[N_CHANNELS];
   TStat st3204[4];
   uint8_t k=10;
+  uint8_t row;
 
 
   /* USER CODE END 2 */
@@ -230,25 +234,131 @@ int main(void)
 	  	  }
 	  // deselect MCP3204, external ADC
 //	  STAT_print(&st3204[0]);
-	  STAT_printVolt(&st3204[0],3.0,4096);		// MCP3204     - ch0 - Volt
-	  STAT_printVolt(&st[0],3.3,4096);			// STM32F411re - ch0 - Volt
-	  STAT_printVolt(&st[1],3.3,4096);			// STM32F411re - ch1 - Volt (gemessene Referenz vom MCP3204)
-	  STAT_print(&st3204[0]);					// MCP3204     - ch0 - cnts
+	  row = 2;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch0 - 1.22 V:");
+	  VT100CursorGoto(row,25);
 	  STAT_print(&st[0]);						// STM32F411re - ch0 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[0],3.3,4096);			// STM32F411re - ch0 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch0 - 1.22 V:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[0]);					// MCP3204     - ch0 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st3204[0],3.0,4096);		// MCP3204     - ch0 - Volt
+
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch1 - 3.0 V:");
+	  VT100CursorGoto(row,25);
 	  STAT_print(&st[1]);						// STM32F411re - ch1 - cnts (gemessene Referenz vom MCP3204)
-	  STAT_print(&st3204[1]);					// MCP3204     - ch1 - cnts
-	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts
-	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts (HIH4000)
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[1],3.3,4096);			// STM32F411re - ch1 - Volt (gemessene Referenz vom MCP3204)
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch4:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[2]);						// STM32F411re - ch4 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[2],3.3,4096);			// STM32F411re - ch4 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch5:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[3]);						// STM32F411re - ch5 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[3],3.3,4096);			// STM32F411re - ch5 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch6:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[4]);						// STM32F411re - ch6 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[4],3.3,4096);			// STM32F411re - ch6 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch7:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[5]);						// STM32F411re - ch7 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[5],3.3,4096);			// STM32F411re - ch7 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch8:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[6]);						// STM32F411re - ch8 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[6],3.3,4096);			// STM32F411re - ch8 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch10:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[7]);						// STM32F411re - ch10 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[7],3.3,4096);			// STM32F411re - ch10 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch11:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st[8]);						// STM32F411re - ch11 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[8],3.3,4096);			// STM32F411re - ch11 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch9 - T:");
+	  VT100CursorGoto(row,25);
 	  STAT_print(&st[9]);						// STM32F411re - Temperatur - cnts
+
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch1:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[1]);					// MCP3204     - ch1 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st3204[1],3.0,4096);		// MCP3204     - ch1 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch2:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st3204[2],3.0,4096);		// MCP3204     - ch2 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch3 - RH:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts (HIH4000)
+	  VT100CursorGoto(row,50);
 	  STAT_printRH(&st3204[3], 5.0, 25.0);		// MCP3204     - ch3 - RH (via HIH4000)
+
 	  printf("\r\n");
 
+//	  VT100CursorHome();
+
+/*
 	  k--;
 	  if (k==0) {
-		  printf("\r\n          3204 - ch0           32F411 - ch0           32F411 - ch1              3204 - ch0           32F411 - ch0           32F411 - ch1             3204 - ch1             3204 - ch2             3204 - ch3          32F411 - temp\r\n");
+		  VT100SetAttributeMode(VT100_AM_BRIGHT, VT100_AM_IGNORE, VT100_AM_IGNORE);
+		  printf("\r\n          3204 - ch0           32F411 - ch0           32F411 - ch1            3204 - ch0         32F411 - ch0         32F411 - ch1           3204 - ch1           3204 - ch2           3204 - ch3              RH\r\n");
+		  VT100SetAttributeMode(VT100_AM_RESET, VT100_AM_IGNORE, VT100_AM_IGNORE);
 		  k=10;
 	  	  }
-
+*/
 
   /* USER CODE END WHILE */
 
@@ -492,7 +602,7 @@ static void MX_USART2_UART_Init(void)
 {
 
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
