@@ -49,19 +49,19 @@ void STAT_print(TStat *st) {
 	printf("%7.1f (%5.2f)[%2d]  ",STAT_meanValue(st), sd, dy);
 	}
 
-void STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
+double STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
 	double u = STAT_meanValue(st)*uRef/(double)fullScale;
 	double du = STAT_stdDev(st)*uRef/(double)fullScale;
 	printf("%7.4f V \302\261 %5.1f mV   ",u, du*1000.0);
+	return u;
 	}
 
-void STAT_printRH(TStat *st, double uSupp, double T) {
+void STAT_printRH(TStat *st, double uRef, double uSupp, double T) {
 	const double a1 = 0.0062;
 	const double b1 = 0.16;
 	const double a2 = 0.00216;
 	const double b2 = 1.0546;
 	const double cnt_max = 4096.0;
-	const double uRef = 3.0;
 	const double R1 = 47.0;
 	const double R2 = 33.0;
 
@@ -72,6 +72,19 @@ void STAT_printRH(TStat *st, double uSupp, double T) {
 
 	printf("%7.1f %% \302\261 %5.1f %%    ",RH_c, dRH_c);
 
+	}
+
+void STAT_printLux(TStat *st, double uSupp) {
+	const double rr1 = 10000.0;
+	const double rr2 = 10000.0;
+	const double u33 = 3.3;
+	const double c4096 = 4096.0;
+	const double a = -1.382618914854915;
+	const double b = 14.66930934325008;
+
+	double lux=exp(a*log((exp(b/a)*STAT_meanValue(st)*rr1*rr2*u33)/(c4096*rr2*uSupp-STAT_meanValue(st)*rr2*u33-STAT_meanValue(st)*rr1*u33)));
+
+	printf("%7.1f lux",lux);
 	}
 
 

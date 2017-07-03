@@ -69,6 +69,8 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* Private variables ---------------------------------------------------------*/
 uint8_t spi_out[12] = { 0x06, 0x00, 0x00,  0x06, 0x40, 0x00,  0x06, 0x80, 0x00,  0x06, 0xc0, 0x00}; // ch0-ch3 in single ended mode
 uint8_t spi_in[12];
+double tAmb = 25.0;		// Umgebungstemperatur
+double uSupp5 = 5.0;	// Versorgungsspannung 5.0 V
 
 struct DAQU_HIH8000_result hih8000_result;
 HAL_StatusTypeDef hih8000_status;
@@ -280,6 +282,12 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch4 - RH:");
+	  VT100CursorGoto(row,50);
+	  STAT_printRH(&st[2], 3.3, uSupp5, tAmb);		// STM32F411re - ch4 - RH (via HIH4000)
+
+	  row++;
+	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch5:");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st[3]);						// STM32F411re - ch5 - cnts
@@ -293,6 +301,13 @@ int main(void)
 	  STAT_print(&st[4]);						// STM32F411re - ch6 - cnts
 	  VT100CursorGoto(row,50);
 	  STAT_printVolt(&st[4],3.3,4096);			// STM32F411re - ch6 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch6 - LDR:");
+	  VT100CursorGoto(row,50);
+	  STAT_printLux(&st[4],uSupp5);				// STM32F411re - ch6 - LDR
+
 
 	  row++;
 	  VT100CursorGoto(row,1);
@@ -347,15 +362,21 @@ int main(void)
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts - 5 V
 	  VT100CursorGoto(row,50);
-	  STAT_printVolt(&st3204[2],3.0*8.0/4.7,4096);		// MCP3204     - ch2 - Volt
+	  uSupp5 = STAT_printVolt(&st3204[2],3.0*8.0/4.7,4096);		// MCP3204     - ch2 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch3:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts - 5 V
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st3204[3],3.0,4096);		// MCP3204     - ch3 - Volt
 
 	  row++;
 	  VT100CursorGoto(row,1);
 	  printf("3204   - ch3 - RH:");
-	  VT100CursorGoto(row,25);
-	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts (HIH4000)
 	  VT100CursorGoto(row,50);
-	  STAT_printRH(&st3204[3], 5.0, 25.0);		// MCP3204     - ch3 - RH (via HIH4000)
+	  STAT_printRH(&st3204[3], 3.0, uSupp5, tAmb);		// MCP3204     - ch3 - RH (via HIH4000)
 
 	  if (hih8000_status==HAL_OK) {
 		  row++;
@@ -368,7 +389,8 @@ int main(void)
 		  VT100CursorGoto(row,1);
 		  printf("HIH8000      - T:");
 		  VT100CursorGoto(row,50);
-		  printf("%7.1f deg C",DAQU_HIH8000_get_Temperature(&hih8000_result));
+		  tAmb = DAQU_HIH8000_get_Temperature(&hih8000_result);
+		  printf("%7.1f deg C",tAmb);
 
 		  row++;
 		  VT100CursorGoto(row,1);
