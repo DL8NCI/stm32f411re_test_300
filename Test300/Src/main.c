@@ -72,7 +72,7 @@ uint8_t spi_in[12];
 double tAmb = 25.0;		// Umgebungstemperatur
 double uSupp5 = 5.0;	// Versorgungsspannung 5.0 V
 
-struct DAQU_HIH8000_result hih8000_result;
+struct TDAQU_HIH8000_result hih8000_result;
 HAL_StatusTypeDef hih8000_status;
 
 /* USER CODE END PV */

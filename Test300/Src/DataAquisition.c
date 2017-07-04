@@ -89,7 +89,7 @@ HAL_StatusTypeDef DAQU_start_HIH8000(I2C_HandleTypeDef *hi2c) {
 	}
 
 
-HAL_StatusTypeDef DAQU_read_HIH8000(I2C_HandleTypeDef *hi2c, struct DAQU_HIH8000_result *r) {
+HAL_StatusTypeDef DAQU_read_HIH8000(I2C_HandleTypeDef *hi2c, struct TDAQU_HIH8000_result *r) {
 	uint8_t b[4];
 	HAL_StatusTypeDef rc = HAL_I2C_Master_Receive(hi2c, 0x4f, &b[0], 4, 1000);
 	if (rc!=HAL_OK) return rc;
@@ -100,15 +100,15 @@ HAL_StatusTypeDef DAQU_read_HIH8000(I2C_HandleTypeDef *hi2c, struct DAQU_HIH8000
 	return rc;
 	}
 
-double DAQU_HIH8000_get_RelativeHumidity(struct DAQU_HIH8000_result *r) {
+double DAQU_HIH8000_get_RelativeHumidity(struct TDAQU_HIH8000_result *r) {
 	return (double)r->humidity/163.820;
 	}
 
-double DAQU_HIH8000_get_Temperature(struct DAQU_HIH8000_result *r) {
+double DAQU_HIH8000_get_Temperature(struct TDAQU_HIH8000_result *r) {
 	return (double)r->temperature*165.0/16382.0 - 40.0;
 	}
 
-double DAQU_HIH8000_getDewPointTemperature(struct DAQU_HIH8000_result *r) {
+double DAQU_HIH8000_getDewPointTemperature(struct TDAQU_HIH8000_result *r) {
 	double rh = (double)r->humidity/163.820;;
 	double t = (double)r->temperature*165.0/16382.0 - 40.0;
 	return pow(rh/100.0,1.0/8.02)*(109.8+t)-109.8;

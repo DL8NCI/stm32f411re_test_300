@@ -9,6 +9,7 @@
 #include "Statistics.h"
 #include "math.h"
 
+
 void STAT_init(TStat *st) {
 	st->sx = 0;
 	st->sx2 = 0.0;
@@ -65,13 +66,11 @@ void STAT_printRH(TStat *st, double uRef, double uSupp, double T) {
 	const double R1 = 47.0;
 	const double R2 = 33.0;
 
-
 	double RH_c = (b1*cnt_max*R1*uSupp-STAT_meanValue(st)*(R2+R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp);
 
 	double dRH_c = ((-R2-R1)*uRef)/(a1*(a2*cnt_max*R1*T-b2*cnt_max*R1)*uSupp)*STAT_stdDev(st);
 
 	printf("%7.1f %% \302\261 %5.1f %%    ",RH_c, dRH_c);
-
 	}
 
 void STAT_printLux(TStat *st, double uSupp) {
@@ -82,9 +81,10 @@ void STAT_printLux(TStat *st, double uSupp) {
 	const double a = -1.382618914854915;
 	const double b = 14.66930934325008;
 
-	double lux=exp(a*log((exp(b/a)*STAT_meanValue(st)*rr1*rr2*u33)/(c4096*rr2*uSupp-STAT_meanValue(st)*rr2*u33-STAT_meanValue(st)*rr1*u33)));
-
-	printf("%7.1f lux",lux);
+	double cnt = STAT_meanValue(st);
+	double lux = exp(a*log((cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33))+b);
+//	double dlux = STAT_stdDev(st)*lux*a*c4096*rr2*uSupp/(cnt*c4096*rr2*uSupp-cnt*cnt*u33*(rr1+rr2));
+//	printf("%7.1f lux \302\261 %5.2f",lux,dlux);
+	printf("%7.1f Lx",lux);
 	}
-
 
