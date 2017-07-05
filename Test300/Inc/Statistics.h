@@ -27,6 +27,7 @@ double STAT_stdDev(TStat *st);
 uint16_t STAT_interval(TStat *st);
 void STAT_print(TStat *st);
 double STAT_printVolt(TStat *st, double uRef, uint16_t fullScale);
+double STAT_printCpuTemperature(TStat *st);
 void STAT_printRH(TStat *st, double uRef, double uSupp, double T);
 void STAT_printLux(TStat *st, double uSupp);
 

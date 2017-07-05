@@ -180,6 +180,7 @@ int main(void)
 
   VT100EraseScreen();
   VT100CursorHome();
+
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
 /* Pinbelegung
@@ -343,10 +344,17 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
-	  printf("32F411 - ch9 - T:");
+	  printf("32F411 - ch9:");
 	  VT100CursorGoto(row,25);
-	  STAT_print(&st[9]);						// STM32F411re - Temperatur - cnts
+	  STAT_print(&st[9]);						// STM32F411re - ch9 - cnts
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st[9],3.3,4096);			// STM32F411re - ch9 - Volt
 
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("32F411 - ch9 - CPU-T:");
+	  VT100CursorGoto(row,50);
+	  STAT_printCpuTemperature(&st[9]);			// STM32F411re - Temperatur - deg C
 
 	  row++;
 	  VT100CursorGoto(row,1);

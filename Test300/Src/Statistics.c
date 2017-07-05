@@ -57,6 +57,19 @@ double STAT_printVolt(TStat *st, double uRef, uint16_t fullScale) {
 	return u;
 	}
 
+double STAT_printCpuTemperature(TStat *st) {
+	uint16_t *cal1 = (uint16_t*) (0x1FFF7A2C);
+	uint16_t *cal2 = (uint16_t*) (0x1FFF7A2E);
+
+	double a = 80.0/((double)*cal2-(double)*cal1);
+	double b = (110.0*(double)*cal1-30.0*(double)*cal2)/((double)*cal1-(double)*cal2);
+
+	double t = STAT_meanValue(st)*a+b;
+	double dt = STAT_stdDev(st)*a;
+
+	printf("%7.1f deg C \302\261 %3.1f deg C",t,dt);
+	}
+
 void STAT_printRH(TStat *st, double uRef, double uSupp, double T) {
 	const double a1 = 0.0062;
 	const double b1 = 0.16;
@@ -73,16 +86,57 @@ void STAT_printRH(TStat *st, double uRef, double uSupp, double T) {
 	printf("%7.1f %% \302\261 %5.1f %%    ",RH_c, dRH_c);
 	}
 
-void STAT_printLux(TStat *st, double uSupp) {
+void STAT_printLux(TStat *st, double uSupp) { // https://unterricht.educa.ch/sites/default/files/20101215/ldr.pdf
 	const double rr1 = 10000.0;
 	const double rr2 = 10000.0;
 	const double u33 = 3.3;
 	const double c4096 = 4096.0;
 	const double a = -1.382618914854915;
 	const double b = 14.66930934325008;
+	const double lA=log(40530.0683987197);
+	const double alpha = 0.72326509442042;
 
 	double cnt = STAT_meanValue(st);
-	double lux = exp(a*log((cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33))+b);
+
+// (%o13) [alpha=0.72326509442042,A=40530.0683987197]
+// E(R):=exp((log(A)-log(R))/alpha)
+
+
+/*
+ *
+ *                   o uSupp (ca. 5V)
+ *                   |
+ *                   |
+ *                 +-+-+
+ *                 |   |
+ *                 | R |
+ *                 | 1 |
+ *                 |   |
+ *                 +-+-+
+ *                   |
+ *                   |
+ *               +---o---+-----o ux
+ *               |       |
+ *               |       |
+ *             +-+-+   +-+-+
+ *             |   |   |   | LDR
+ *             | R |   | R |
+ *             | 2 |   | x |
+ *             |   |   |   |
+ *             +-+-+   +-+-+
+ *               |       |
+ *               |       |
+ *              ===     ===
+ *
+ *
+ *
+ */
+
+
+	double rx=(cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33);
+	double lux = exp((lA-log(rx))/alpha);
+
+//	double lux = exp(a*log((cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33))+b);
 //	double dlux = STAT_stdDev(st)*lux*a*c4096*rr2*uSupp/(cnt*c4096*rr2*uSupp-cnt*cnt*u33*(rr1+rr2));
 //	printf("%7.1f lux \302\261 %5.2f",lux,dlux);
 	printf("%7.1f Lx",lux);
