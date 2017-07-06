@@ -142,3 +142,17 @@ void STAT_printLux(TStat *st, double uSupp) { // https://unterricht.educa.ch/sit
 	printf("%7.1f Lx",lux);
 	}
 
+
+double STAT_printPT1000Temperature(TStat *st, double uSupp, double uRef) {
+	const double r1 = 1000.0;
+	const double c4096 = 4096.0;
+
+	double cnt = STAT_meanValue(st);
+	double rx = (cnt*r1*uRef)/(c4096*uSupp-cnt*uRef);
+	double r = rx/1000.0 - 1.0;
+	double t = r*(255.8723+r*(9.6+r*0.878));
+
+	printf("%7.1f deg C",t);
+	}
+
+

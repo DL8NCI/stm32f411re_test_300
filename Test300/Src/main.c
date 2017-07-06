@@ -366,6 +366,12 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
+	  printf("3204   - ch1 - T:");
+	  VT100CursorGoto(row,50);
+	  STAT_printPT1000Temperature(&st3204[1], uSupp5, 3.0);		// MCP3204     - ch1 - PT1000
+
+	  row++;
+	  VT100CursorGoto(row,1);
 	  printf("3204   - ch2 - 5 V:");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts - 5 V
