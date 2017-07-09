@@ -205,7 +205,6 @@ int main(void)
 
   TStat st[N_CHANNELS];
   TStat st3204[4];
-  uint8_t k=10;
   uint8_t row;
 
 
@@ -246,8 +245,7 @@ int main(void)
 	  if (hih8000_status==HAL_OK) {
 		  hih8000_status = DAQU_read_HIH8000(&hi2c1,&hih8000_result);
 	  	  }
-	  // deselect MCP3204, external ADC
-//	  STAT_print(&st3204[0]);
+
 	  row = 2;
 	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch0 - 1.22 V:");
@@ -275,6 +273,14 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
+	  printf("3204   - ch2 - 5 V:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts - 5 V
+	  VT100CursorGoto(row,50);
+	  uSupp5 = STAT_printVolt(&st3204[2],3.0*8.0/4.7,4096);		// MCP3204     - ch2 - Volt
+
+	  row += 2;
+	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch4:");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st[2]);						// STM32F411re - ch4 - cnts
@@ -289,11 +295,27 @@ int main(void)
 
 	  row++;
 	  VT100CursorGoto(row,1);
+	  printf("3204   - ch3:");
+	  VT100CursorGoto(row,25);
+	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts - 5 V
+	  VT100CursorGoto(row,50);
+	  STAT_printVolt(&st3204[3],3.0,4096);		// MCP3204     - ch3 - Volt
+
+	  row++;
+	  VT100CursorGoto(row,1);
+	  printf("3204   - ch3 - RH:");
+	  VT100CursorGoto(row,50);
+	  STAT_printRH(&st3204[3], 3.0, uSupp5, tAmb);		// MCP3204     - ch3 - RH (via HIH4000)
+
+/*
+	  row++;
+	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch5:");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st[3]);						// STM32F411re - ch5 - cnts
 	  VT100CursorGoto(row,50);
 	  STAT_printVolt(&st[3],3.3,4096);			// STM32F411re - ch5 - Volt
+*/
 
 	  row++;
 	  VT100CursorGoto(row,1);
@@ -309,7 +331,7 @@ int main(void)
 	  VT100CursorGoto(row,50);
 	  STAT_printLux(&st[4],uSupp5);				// STM32F411re - ch6 - LDR
 
-
+/*
 	  row++;
 	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch7:");
@@ -341,6 +363,7 @@ int main(void)
 	  STAT_print(&st[8]);						// STM32F411re - ch11 - cnts
 	  VT100CursorGoto(row,50);
 	  STAT_printVolt(&st[8],3.3,4096);			// STM32F411re - ch11 - Volt
+*/
 
 	  row++;
 	  VT100CursorGoto(row,1);
@@ -370,30 +393,9 @@ int main(void)
 	  VT100CursorGoto(row,50);
 	  STAT_printPT1000Temperature(&st3204[1], uSupp5, 3.0);		// MCP3204     - ch1 - PT1000
 
-	  row++;
-	  VT100CursorGoto(row,1);
-	  printf("3204   - ch2 - 5 V:");
-	  VT100CursorGoto(row,25);
-	  STAT_print(&st3204[2]);					// MCP3204     - ch2 - cnts - 5 V
-	  VT100CursorGoto(row,50);
-	  uSupp5 = STAT_printVolt(&st3204[2],3.0*8.0/4.7,4096);		// MCP3204     - ch2 - Volt
-
-	  row++;
-	  VT100CursorGoto(row,1);
-	  printf("3204   - ch3:");
-	  VT100CursorGoto(row,25);
-	  STAT_print(&st3204[3]);					// MCP3204     - ch3 - cnts - 5 V
-	  VT100CursorGoto(row,50);
-	  STAT_printVolt(&st3204[3],3.0,4096);		// MCP3204     - ch3 - Volt
-
-	  row++;
-	  VT100CursorGoto(row,1);
-	  printf("3204   - ch3 - RH:");
-	  VT100CursorGoto(row,50);
-	  STAT_printRH(&st3204[3], 3.0, uSupp5, tAmb);		// MCP3204     - ch3 - RH (via HIH4000)
 
 	  if (hih8000_status==HAL_OK) {
-		  row++;
+		  row += 2;
 		  VT100CursorGoto(row,1);
 		  printf("HIH8000      - RH:");
 		  VT100CursorGoto(row,50);
@@ -419,17 +421,6 @@ int main(void)
 
 	  printf("\r\n");
 
-//	  VT100CursorHome();
-
-/*
-	  k--;
-	  if (k==0) {
-		  VT100SetAttributeMode(VT100_AM_BRIGHT, VT100_AM_IGNORE, VT100_AM_IGNORE);
-		  printf("\r\n          3204 - ch0           32F411 - ch0           32F411 - ch1            3204 - ch0         32F411 - ch0         32F411 - ch1           3204 - ch1           3204 - ch2           3204 - ch3              RH\r\n");
-		  VT100SetAttributeMode(VT100_AM_RESET, VT100_AM_IGNORE, VT100_AM_IGNORE);
-		  k=10;
-	  	  }
-*/
 
   /* USER CODE END WHILE */
 

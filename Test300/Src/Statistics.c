@@ -8,6 +8,7 @@
 
 #include "Statistics.h"
 #include "math.h"
+#include <stdio.h>
 
 
 void STAT_init(TStat *st) {
@@ -68,6 +69,7 @@ double STAT_printCpuTemperature(TStat *st) {
 	double dt = STAT_stdDev(st)*a;
 
 	printf("%7.1f deg C \302\261 %3.1f deg C",t,dt);
+	return t;
 	}
 
 void STAT_printRH(TStat *st, double uRef, double uSupp, double T) {
@@ -91,16 +93,10 @@ void STAT_printLux(TStat *st, double uSupp) { // https://unterricht.educa.ch/sit
 	const double rr2 = 10000.0;
 	const double u33 = 3.3;
 	const double c4096 = 4096.0;
-	const double a = -1.382618914854915;
-	const double b = 14.66930934325008;
 	const double lA=log(40530.0683987197);
 	const double alpha = 0.72326509442042;
 
 	double cnt = STAT_meanValue(st);
-
-// (%o13) [alpha=0.72326509442042,A=40530.0683987197]
-// E(R):=exp((log(A)-log(R))/alpha)
-
 
 /*
  *
@@ -136,9 +132,6 @@ void STAT_printLux(TStat *st, double uSupp) { // https://unterricht.educa.ch/sit
 	double rx=(cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33);
 	double lux = exp((lA-log(rx))/alpha);
 
-//	double lux = exp(a*log((cnt*rr1*rr2*u33)/(c4096*rr2*uSupp+(-cnt*rr2-cnt*rr1)*u33))+b);
-//	double dlux = STAT_stdDev(st)*lux*a*c4096*rr2*uSupp/(cnt*c4096*rr2*uSupp-cnt*cnt*u33*(rr1+rr2));
-//	printf("%7.1f lux \302\261 %5.2f",lux,dlux);
 	printf("%7.1f Lx",lux);
 	}
 
@@ -153,6 +146,7 @@ double STAT_printPT1000Temperature(TStat *st, double uSupp, double uRef) {
 	double t = r*(255.8723+r*(9.6+r*0.878));
 
 	printf("%7.1f deg C",t);
+	return t;
 	}
 
 
