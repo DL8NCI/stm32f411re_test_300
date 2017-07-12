@@ -60,7 +60,7 @@ I2C_HandleTypeDef hi2c1;
 
 SPI_HandleTypeDef hspi2;
 
-TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim2;
 
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
@@ -69,11 +69,14 @@ DMA_HandleTypeDef hdma_usart2_tx;
 /* Private variables ---------------------------------------------------------*/
 uint8_t spi_out[12] = { 0x06, 0x00, 0x00,  0x06, 0x40, 0x00,  0x06, 0x80, 0x00,  0x06, 0xc0, 0x00}; // ch0-ch3 in single ended mode
 uint8_t spi_in[12];
+
 double tAmb = 25.0;		// Umgebungstemperatur
 double uSupp5 = 5.0;	// Versorgungsspannung 5.0 V
 
 struct TDAQU_HIH8000_result hih8000_result;
 HAL_StatusTypeDef hih8000_status;
+
+volatile uint32_t counter_2_1 = 0; // counter 2, channel 1
 
 /* USER CODE END PV */
 
@@ -83,9 +86,9 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
-static void MX_TIM3_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_TIM2_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -124,9 +127,9 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
-  MX_TIM3_Init();
   MX_SPI2_Init();
   MX_I2C1_Init();
+  MX_TIM2_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -147,8 +150,8 @@ int main(void)
   HAL_GPIO_Init(D2_PORT,&itd);
 
    // D3 - PB3 as diagnostics output
-  itd.Pin = D3_PIN;
-  HAL_GPIO_Init(D3_PORT,&itd);
+//  itd.Pin = D3_PIN;
+//  HAL_GPIO_Init(D3_PORT,&itd);
 
   // D4 - PB5 as diagnostics output
   itd.Pin = D4_PIN;
@@ -175,8 +178,6 @@ int main(void)
 
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
-
-  HAL_TIM_Base_Start_IT(&htim3);
 
   VT100EraseScreen();
   VT100CursorHome();
@@ -422,6 +423,33 @@ int main(void)
 	  printf("\r\n");
 
 
+	  counter_2_1 = 0;
+
+	  rc = HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+	  if (rc==0) {
+
+		  uint32_t t = HAL_GetTick();
+		  uint32_t dt;
+
+		  do {
+		  	  dt = HAL_GetTick() - t;
+		  	  } while ((counter_2_1 == 0) && (dt<100));
+
+		  if (dt<100) {
+			  printf("cnt = %ld\r\n",counter_2_1);
+		  	  }
+		  else {
+			  printf("Timeout\r\n");
+		  	  }
+	  	  }
+	  else {
+		  printf("Start error (rc = %d)\r\n", rc);
+	  	  }
+
+	  rc = HAL_TIM_IC_Stop_IT(&htim2, TIM_CHANNEL_1);
+	  if (rc!=0) printf("Stop error (rc = %d)\r\n",rc);
+
+
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
@@ -647,32 +675,57 @@ static void MX_SPI2_Init(void)
 
 }
 
-/* TIM3 init function */
-static void MX_TIM3_Init(void)
+/* TIM2 init function */
+static void MX_TIM2_Init(void)
 {
 
   TIM_ClockConfigTypeDef sClockSourceConfig;
+  TIM_SlaveConfigTypeDef sSlaveConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
+  TIM_IC_InitTypeDef sConfigIC;
 
-  htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 0;
-  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 959;
-  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 0;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
   sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  if (HAL_TIM_IC_Init(&htim2) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sSlaveConfig.SlaveMode = TIM_SLAVEMODE_RESET;
+  sSlaveConfig.InputTrigger = TIM_TS_TI1FP1;
+  sSlaveConfig.TriggerPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sSlaveConfig.TriggerFilter = 3;
+  if (HAL_TIM_SlaveConfigSynchronization(&htim2, &sSlaveConfig) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+  sConfigIC.ICPolarity = TIM_INPUTCHANNELPOLARITY_RISING;
+  sConfigIC.ICSelection = TIM_ICSELECTION_DIRECTTI;
+  sConfigIC.ICPrescaler = TIM_ICPSC_DIV1;
+  sConfigIC.ICFilter = 3;
+  if (HAL_TIM_IC_ConfigChannel(&htim2, &sConfigIC, TIM_CHANNEL_1) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
@@ -736,9 +789,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  {
-	HAL_GPIO_TogglePin(D3_PORT,D3_PIN);
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)  {
+//	HAL_GPIO_TogglePin(D3_PORT,D3_PIN);
+//	}
+
+
+
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
+//	if (htim->Instance!=TIM2) return;
+	counter_2_1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
 	}
+
+
 
 /* USER CODE END 4 */
 
