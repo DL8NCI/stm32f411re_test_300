@@ -439,7 +439,7 @@ int main(void)
 			  printf("cnt = %ld\r\n",counter_2_1);
 		  	  }
 		  else {
-			  printf("Timeout\r\n");
+			  printf("Timeout - cnt = %ld\r\n",htim2.Instance->CNT);
 		  	  }
 	  	  }
 	  else {
