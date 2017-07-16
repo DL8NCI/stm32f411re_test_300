@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=C:/Users/DL8NCI/Documents/Entwicklung/git/stm32f411re_test_300/Test300/Inc
+HeaderPath=D:/Users/DL8NCI/Documents/Entwicklung/git/stm32f411re_test_300/Test300/Inc
 HeaderFiles=stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;
-SourcePath=C:/Users/DL8NCI/Documents/Entwicklung/git/stm32f411re_test_300/Test300/Src
+SourcePath=D:/Users/DL8NCI/Documents/Entwicklung/git/stm32f411re_test_300/Test300/Src
 SourceFiles=stm32f4xx_it.h;stm32f4xx_hal_conf.h;main.h;stm32f4xx_it.c;stm32f4xx_hal_msp.c;main.c;stm32f4xx_hal_timebase_TIM.c;
 
 [PreviousLibFiles]
