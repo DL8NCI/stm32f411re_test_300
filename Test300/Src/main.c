@@ -77,6 +77,7 @@ struct TDAQU_HIH8000_result hih8000_result;
 HAL_StatusTypeDef hih8000_status;
 
 volatile uint32_t counter_2_1 = 0; // counter 2, channel 1
+volatile uint8_t  trigger_detected = 0;
 
 /* USER CODE END PV */
 
@@ -419,11 +420,15 @@ int main(void)
 	  else {
 		  row += 3;
 	  }
-
 	  printf("\r\n");
 
 
+	  printf("\r\n");
+
 	  counter_2_1 = 0;
+	  trigger_detected = 0;
+
+//	  htim2.Instance->SR = 0;
 
 	  rc = HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
 	  if (rc==0) {
@@ -432,11 +437,21 @@ int main(void)
 		  uint32_t dt;
 
 		  do {
+			  if (trigger_detected==2) {
+//				  printf("trigger detected\r\n");
+				  trigger_detected = 3;
+			  	  }
 		  	  dt = HAL_GetTick() - t;
-		  	  } while ((counter_2_1 == 0) && (dt<100));
+		  	  } while (trigger_detected<11 && (dt<100));
 
 		  if (dt<100) {
 			  printf("cnt = %ld\r\n",counter_2_1);
+			  double m = 12.90322580645162; // uT/us
+			  double t = -151.9354838709678; // uT
+			  double tcorr = 1.0/(0.015 + (10*96.0)/(double)counter_2_1);
+			  double b = m * tcorr + t;
+
+			  printf("T   = %6.3f us     Tcorr = %6.3f us     B = %7.3f uT\r\n",(double)counter_2_1/(10*96.0), tcorr, b );
 		  	  }
 		  else {
 			  printf("Timeout - cnt = %ld\r\n",htim2.Instance->CNT);
@@ -445,6 +460,7 @@ int main(void)
 	  else {
 		  printf("Start error (rc = %d)\r\n", rc);
 	  	  }
+
 
 	  rc = HAL_TIM_IC_Stop_IT(&htim2, TIM_CHANNEL_1);
 	  if (rc!=0) printf("Stop error (rc = %d)\r\n",rc);
@@ -687,7 +703,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 0;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 0;
+  htim2.Init.Period = 69000000;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
   {
@@ -797,9 +813,14 @@ static void MX_GPIO_Init(void)
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim) {
 //	if (htim->Instance!=TIM2) return;
-	counter_2_1 = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+	if ((trigger_detected>=1) && (trigger_detected<=10))
+		counter_2_1 += HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_1);
+	trigger_detected++;
 	}
-
+void HAL_TIM_TriggerCallback(TIM_HandleTypeDef *htim) {
+//	trigger_detected++;
+//	htim->Instance->SR &= ~0x04UL;
+	}
 
 
 /* USER CODE END 4 */

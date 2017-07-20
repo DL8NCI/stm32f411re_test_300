@@ -114,5 +114,26 @@ double DAQU_HIH8000_getDewPointTemperature(struct TDAQU_HIH8000_result *r) {
 	return pow(rh/100.0,1.0/8.02)*(109.8+t)-109.8;
 	}
 
+void DAQU_TIM_dumpRegisters(TIM_HandleTypeDef *htim) {
+	printf("TIM2_CR1   = %08lx\r\n",htim->Instance->CR1);
+	printf("TIM2_CR2   = %08lx\r\n",htim->Instance->CR2);
+	printf("TIM2_SMCR  = %08lx\r\n",htim->Instance->SMCR);
+	printf("TIM2_DIER  = %08lx\r\n",htim->Instance->DIER);
+	printf("TIM2_SR    = %08lx\r\n",htim->Instance->SR);
+	printf("TIM2_EGR   = %08lx\r\n",htim->Instance->EGR);
+	printf("TIM2_CCMR1 = %08lx\r\n",htim->Instance->CCMR1);
+	printf("TIM2_CCMR2 = %08lx\r\n",htim->Instance->CCMR2);
+	printf("TIM2_CCER  = %08lx\r\n",htim->Instance->CCER);
+	printf("TIM2_CNT   = %08lx\r\n",htim->Instance->CNT);
+	printf("TIM2_PSC   = %08lx\r\n",htim->Instance->PSC);
+	printf("TIM2_ARR   = %08lx\r\n",htim->Instance->ARR);
+	printf("TIM2_CCR1  = %08lx\r\n",htim->Instance->CCR1);
+	printf("TIM2_CCR2  = %08lx\r\n",htim->Instance->CCR2);
+	printf("TIM2_CCR3  = %08lx\r\n",htim->Instance->CCR3);
+	printf("TIM2_CCR4  = %08lx\r\n",htim->Instance->CCR4);
+	printf("TIM2_DCR   = %08lx\r\n",htim->Instance->DCR);
+	printf("TIM2_DMAR  = %08lx\r\n",htim->Instance->DMAR);
+	printf("TIM2_OR    = %08lx\r\n\r\n",htim->Instance->OR);
+	}
 
 

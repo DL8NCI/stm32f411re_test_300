@@ -39,4 +39,7 @@ double DAQU_HIH8000_get_Temperature(struct TDAQU_HIH8000_result *r);
 double DAQU_HIH8000_getDewPointTemperature(struct TDAQU_HIH8000_result *r);
 
 
+void DAQU_TIM_dumpRegisters(TIM_HandleTypeDef *htim);
+
+
 #endif /* DATAAQUISITION_H_ */
