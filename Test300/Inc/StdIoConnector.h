@@ -16,11 +16,22 @@
 #define BUFSIZE 1024
 
 
-void STDIOC_init(UART_HandleTypeDef *_huart, DMA_HandleTypeDef *_hdma_usart_tx );
+struct STDIOC_txBufferInt {
+	uint8_t buf[BUFSIZE];
+	uint8_t status;
+	uint16_t i_from, i_to;
+	};
 
-static txBuffer[BUFSIZE];
-static UART_HandleTypeDef *huart;
-static DMA_HandleTypeDef *hdma_usart_tx;
-static int status;
+struct STDIOC_txBuffer {
+	struct STDIOC_txBufferInt b1,b2;
+	struct STDIOC_txBufferInt *sendingBuffer, *fillingBuffer;
+	UART_HandleTypeDef *huart;
+	DMA_HandleTypeDef *hdma_usart_tx;
+	};
+
+static struct STDIOC_txBuffer txBuffer;
+
+void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx);
+
 
 #endif /* STDIOCONNECTOR_H_ */

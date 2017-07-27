@@ -11,11 +11,20 @@
 
 
 
-void STDIOC_init(UART_HandleTypeDef *_huart, DMA_HandleTypeDef *_hdma_usart_tx ) {
-	huart = _huart;
-	hdma_usart_tx = _hdma_usart_tx;
-	status = STDIO_CONNECTOR_STATUS_IDLE;
-}
+void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
+	txBuffer.fillingBuffer = &(txBuffer.b1);
+	txBuffer.sendingBuffer = 0;
+	txBuffer.huart = huart;
+	txBuffer.hdma_usart_tx = hdma_usart_tx;
+
+	txBuffer.b1.status = STDIO_CONNECTOR_STATUS_IDLE;
+	txBuffer.b1.i_from = 0;
+	txBuffer.b1.i_to = 0;
+
+	txBuffer.b2.status = STDIO_CONNECTOR_STATUS_IDLE;
+	txBuffer.b2.i_from = 0;
+	txBuffer.b2.i_to = 0;
+	}
 
 // taken from <http://www.openstm32.org/forumthread1055>
 int _write(int file, char *data, int len) {
@@ -27,7 +36,7 @@ int _write(int file, char *data, int len) {
 
 //	if (HAL_UART_Transmit_DMA(&huart2, (uint8_t*)data, len)!=HAL_OK) {
 //    if (HAL_UART_Transmit_IT(&huart2, (uint8_t*)data, len)!=HAL_OK) {
-    if (HAL_UART_Transmit(huart, (uint8_t*)data, len, 1000)!=HAL_OK) {
+    if (HAL_UART_Transmit(txBuffer.huart, (uint8_t*)data, len, 1000)!=HAL_OK) {
     	errno = EIO;
     	return -1;
     	}

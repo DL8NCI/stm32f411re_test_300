@@ -62,7 +62,9 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim2;
 
+UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
@@ -90,6 +92,7 @@ static void MX_ADC1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM2_Init(void);
+static void MX_USART1_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -131,6 +134,7 @@ int main(void)
   MX_SPI2_Init();
   MX_I2C1_Init();
   MX_TIM2_Init();
+  MX_USART1_UART_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -145,22 +149,6 @@ int main(void)
   // LED
   itd.Pin = LED_PIN;
   HAL_GPIO_Init(LED_PORT,&itd);
-
-  // D2 - PA10 as diagnostics output
-  itd.Pin = D2_PIN;
-  HAL_GPIO_Init(D2_PORT,&itd);
-
-   // D3 - PB3 as diagnostics output
-//  itd.Pin = D3_PIN;
-//  HAL_GPIO_Init(D3_PORT,&itd);
-
-  // D4 - PB5 as diagnostics output
-  itd.Pin = D4_PIN;
-  HAL_GPIO_Init(D4_PORT,&itd);
-
-  // D5 - PB4 as diagnostics output
-  itd.Pin = D5_PIN;
-  HAL_GPIO_Init(D5_PORT,&itd);
 
   // PB2: !CS for MCP3204 (12 bit ADC)
   itd.Pin = CS_3204_PIN;
@@ -248,7 +236,7 @@ int main(void)
 		  hih8000_status = DAQU_read_HIH8000(&hi2c1,&hih8000_result);
 	  	  }
 
-	  row = 2;
+	  row = 1;
 	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch0 - 1.22 V:");
 	  VT100CursorGoto(row,25);
@@ -309,10 +297,10 @@ int main(void)
 	  VT100CursorGoto(row,50);
 	  STAT_printRH(&st3204[3], 3.0, uSupp5, tAmb);		// MCP3204     - ch3 - RH (via HIH4000)
 
-/*
+/* irgendwie tut der nicht
 	  row++;
 	  VT100CursorGoto(row,1);
-	  printf("32F411 - ch5:");
+	  printf("32F411 - ch5 - 3.3V:");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st[3]);						// STM32F411re - ch5 - cnts
 	  VT100CursorGoto(row,50);
@@ -333,15 +321,14 @@ int main(void)
 	  VT100CursorGoto(row,50);
 	  STAT_printLux(&st[4],uSupp5);				// STM32F411re - ch6 - LDR
 
-/*
 	  row++;
 	  VT100CursorGoto(row,1);
-	  printf("32F411 - ch7:");
+	  printf("32F411 - ch7 - 3.3 V");
 	  VT100CursorGoto(row,25);
 	  STAT_print(&st[5]);						// STM32F411re - ch7 - cnts
 	  VT100CursorGoto(row,50);
 	  STAT_printVolt(&st[5],3.3,4096);			// STM32F411re - ch7 - Volt
-
+/*
 	  row++;
 	  VT100CursorGoto(row,1);
 	  printf("32F411 - ch8:");
@@ -748,6 +735,25 @@ static void MX_TIM2_Init(void)
 
 }
 
+/* USART1 init function */
+static void MX_USART1_UART_Init(void)
+{
+
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 9600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    _Error_Handler(__FILE__, __LINE__);
+  }
+
+}
+
 /* USART2 init function */
 static void MX_USART2_UART_Init(void)
 {
@@ -773,8 +779,8 @@ static void MX_USART2_UART_Init(void)
 static void MX_DMA_Init(void) 
 {
   /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
   __HAL_RCC_DMA2_CLK_ENABLE();
+  __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream6_IRQn interrupt configuration */
@@ -783,6 +789,9 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMA2_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
 
 }
 
