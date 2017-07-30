@@ -167,6 +167,7 @@ int main(void)
 
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
+  STDIOC_init_alt(&huart1);
 
   VT100EraseScreen();
   VT100CursorHome();
@@ -209,7 +210,7 @@ int main(void)
 	  GPIO_PinState x = HAL_GPIO_ReadPin(USER_KEY_PORT,USER_KEY_PIN);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
-	  HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
+//	  HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
 
 	  hih8000_status = DAQU_start_HIH8000(&hi2c1);
 
