@@ -35,6 +35,8 @@ static void reset() {
 	buffer.b2.i_to = 0;
 
 	buffer.status = stReady;
+
+	outc('R');
 	}
 
 void STDIOC_init_alt(UART_HandleTypeDef *_huart) {
@@ -52,12 +54,30 @@ static void outc(uint8_t c) {
 	}
 
 
+static void outNibble(uint8_t x) {
+	const char hex[16] = "0123456789ABCDEF";
+	outc(hex[x]);
+	}
+
+static void outByte(uint8_t x) {
+	outNibble((x & 0xf0) >> 4);
+	outNibble(x & 0x0f);
+	}
+
+static void outWord(uint16_t x) {
+	outByte(x >> 8);
+	outByte(x & 0xff);
+	}
+
+
 static void __TransferCompleteInterruptDisable() {
-//	buffer.hdma_usart_tx->Instance->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
+	buffer.hdma_usart_tx->Instance->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
+//	buffer.hdma_usart_tx->Instance->CR &= ~DMA_IT_TC;
 	}
 
 static void __TransferCompleteInterruptEnable() {
-//	buffer.hdma_usart_tx->Instance->CR |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
+	buffer.hdma_usart_tx->Instance->CR |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
+//	buffer.hdma_usart_tx->Instance->CR |= DMA_IT_TC;
 	}
 
 static struct TBufferStatus *currentInBuffer() {
@@ -152,20 +172,31 @@ int _write(int file, char *data, int len) {
 
 // copy buffer content
 	outc('F');
+	uint16_t cntg = 0;
 	for (uint16_t i = 0; i<len; i++) {
 		if (ib->i == ib->i_to) {
 			errno = ENOMEM;
 			unlock();
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+			outc('G');
+			outc(':');
+			outWord(cntg);
+			outc('-');
 			outc('H');
 			return -1;
 			}
-		outc('G');
+//		outc('G');
+		cntg++;
 		buffer.buf[ib->i] = data[i];
 		ib->i++;
 		ib->n++;
 		if (ib->i >= BUFSIZE) ib->i = 0;
 		}
+
+	outc('G');
+	outc(':');
+	outWord(cntg);
+	outc('-');
 
 	outc('J');
 
@@ -181,25 +212,39 @@ int _write(int file, char *data, int len) {
 	outc('L');
 
 // we can use DMA - swap in and out buffer
-	ib->status = stOut;
-	ib->i_to = ib->i;
-	ib->i = ib->i_from;
 
+
+	if (ib->i > ib->i_from) {
+		// whole buffer in linear address space
+		ib->i_to = ib->i;
+		ib->i = ib->i_from;
+
+		ob->i_from = ib->i_to + 1;
+		if (ob->i_from >= BUFSIZE) ob->i_from = 0;
+		ob->i = ob->i_from;
+		ob->n = 0;
+		ob->i_to = ib->i_from;
+		if (ob->i_to == 0) ob->i_to = BUFSIZE-1; else ob->i_to--;
+		}
+	else {
+		// buffer split
+		outc('P');
+		ob->i = ib->i;
+		ob->n = ob->i + 1;
+		ob->i_from = 0;
+		ob->i_to = ib->i_from - 1;
+
+		ib->i_to = BUFSIZE-1;
+		ib->n = BUFSIZE - ib->i_from;
+		ib->i = ib->i_from;
+		}
+
+	ib->status = stOut;
 	ob->status = stIn;
-	ob->i_from = ib->i_to + 1;
-	if (ob->i_from >= BUFSIZE) ob->i_from = 0;
-	ob->i = ob->i_from;
-	ob->n = 0;
-	ob->i_to = ib->i_from;
-	if (ob->i_to == 0) ob->i_to = BUFSIZE-1; else ob->i_to--;
 
 	__TransferCompleteInterruptEnable();
 	ob = ib;
 	unlock();
-
-// number of bytes to be sent - toDo
-//	uint16_t l;
-//	if (ob->i_to > ob->i_from) l = ob->i_to - ob->i_from; else l = BUFSIZE - ob->i_from;
 
 // setup DMA transfer
 	if (HAL_UART_Transmit_DMA(buffer.huart, &buffer.buf[ob->i_from], ob->n)!=HAL_OK) {

@@ -11,7 +11,7 @@
 #include "stm32f4xx_hal.h"
 
 
-#define BUFSIZE 1024
+#define BUFSIZE 4096
 
 static enum EBufferStatus { stSuccess = 0, stIdle, stIn, stOut, stReady, stLocked, stBusy, stTimeout };
 
