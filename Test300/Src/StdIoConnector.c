@@ -10,23 +10,18 @@
 #include <errno.h>
 
 
-void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
-
-	reset();
-
-	buffer.hdma_usart_tx = hdma_usart_tx;
-	buffer.huart = huart;
-	buffer.nTXDone = 0;
+static void outc(uint8_t c) {
+	uint8_t b = c;
+	HAL_UART_Transmit(huart, &b, 1, 100);
 	}
-
 
 static void reset() {
 
 	buffer.b1.status = stIn;
-	buffer.b1.i_from = 0;
-	buffer.b1.i = 0;
-	buffer.b1.n = 0;
-	buffer.b1.i_to = BUFSIZE-1;
+	buffer.b1.i_from = 0;			// including
+	buffer.b1.i = 0;				// ready to write on this index
+	buffer.b1.n = 0;				// nu,ber of bytes in buffer
+	buffer.b1.i_to = 0;				// excluding
 
 	buffer.b2.status = stIdle;
 	buffer.b2.i_from = 0;
@@ -39,23 +34,77 @@ static void reset() {
 	outc('R');
 	}
 
-void STDIOC_init_alt(UART_HandleTypeDef *_huart) {
-	huart = _huart;
 
-	outc('\x1b');
-	outc('[');
-	outc('2');
-	outc('J');
+void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
+
+	reset();
+
+	buffer.hdma_usart_tx = hdma_usart_tx;
+	buffer.huart = huart;
+	buffer.nTXDone = 0;
 	}
 
-static void outc(uint8_t c) {
-	uint8_t b = c;
-	HAL_UART_Transmit(huart, &b, 1, 100);
+
+
+static void outString(char *c) {
+	uint16_t i = 0;
+	while (c[i]!=0) outc(c[i++]);
+	}
+
+
+
+void STDIOC_init_alt(UART_HandleTypeDef *_huart) {
+	huart = _huart;
+	outString("\x1b[2J\x1b[H");
+	}
+
+static void outBufferStatus() {
+	char b[200];
+	char s1,s2;
+
+	switch (buffer.b1.status) {
+		case stIdle:
+			s1 = 'D';
+			break;
+		case stIn:
+			s1 = 'I';
+			break;
+		case stOut:
+			s1 = 'O';
+			break;
+		default:
+			s1 = '?';
+		}
+
+	switch (buffer.b2.status) {
+		case stIdle:
+			s2 = 'D';
+			break;
+		case stIn:
+			s2 = 'I';
+			break;
+		case stOut:
+			s2 = 'O';
+			break;
+		default:
+			s2 = '?';
+		}
+
+
+	uint16_t nn = buffer.b1.n + buffer.b2.n;
+	double load = (double)nn*100.0/(double)BUFSIZE;
+
+	int l = sprintf(b,"\r\ns: %c  fm %4d  i %4d  n %4d  to %4d    s: %c  fm %4d  i %4d  n %4d  to %4d    %5.1f %%     ",
+			s1, buffer.b1.i_from,buffer.b1.i, buffer.b1.n, buffer.b1.i_to,
+			s2, buffer.b2.i_from,buffer.b2.i, buffer.b2.n, buffer.b2.i_to,
+			load);
+
+	if (l>0) outString(b);
 	}
 
 
 static void outNibble(uint8_t x) {
-	const char hex[16] = "0123456789ABCDEF";
+	const char hex[17] = "0123456789ABCDEF";
 	outc(hex[x]);
 	}
 
@@ -121,12 +170,57 @@ static void unlock() {
 	}
 
 
-int _write(int file, char *data, int len) {
+
+void STDIOC_idle() {
 
 	struct TBufferStatus *ib;
 	struct TBufferStatus *ob;
 
-	outc('A');
+// try to get a lock
+/*
+	if (lock(1000)!=stSuccess) {
+		errno = EBUSY;
+		return -1;
+		}
+*/
+
+// the parameters of the input and output buffers
+
+// any pending txDone event?
+	__TransferCompleteInterruptDisable();
+	if (buffer.nTXDone != 0) {
+		outc('Q');
+		ib = currentInBuffer();
+		ob = currentOutBuffer();
+
+		outBufferStatus();
+		// perform txDone process
+		if (ib->n == 0) {
+			reset();
+			}
+		else {
+			outc('S');
+			ob->n = 0;
+			ob->i_from = ob->i_to;
+			ob->status = stIdle;
+			ib->i_to = ib->i_from;		// the whole buffer is for input
+			}
+		buffer.nTXDone = 0;
+
+		outBufferStatus();
+
+		}
+	__TransferCompleteInterruptEnable();
+	}
+
+
+int writeInt(int file, char *data, int len) {
+
+	struct TBufferStatus *ib;
+	struct TBufferStatus *ob;
+
+	outBufferStatus();
+
 // some basic checks
 	if ((file != STDOUT_FILENO) && (file != STDERR_FILENO)) {
         errno = EBADF;
@@ -160,11 +254,15 @@ int _write(int file, char *data, int len) {
 			}
 		else {
 			outc('E');
+			ob->n = 0;
+			ob->i_from = ob->i_to;
 			ob->status = stIdle;
-			ib->i_to = ib->i_from;
-			if (ib->i_to == 0) ib->i_to = BUFSIZE - 1; else ib->i_to--;
+			ib->i_to = ib->i_from;		// the whole buffer is for input
 			}
 		buffer.nTXDone = 0;
+
+		outBufferStatus();
+
 		}
 	__TransferCompleteInterruptEnable();
 
@@ -174,15 +272,16 @@ int _write(int file, char *data, int len) {
 	outc('F');
 	uint16_t cntg = 0;
 	for (uint16_t i = 0; i<len; i++) {
-		if (ib->i == ib->i_to) {
+		if ((ib->i == ib->i_to) && (ib->n > 0)) {
 			errno = ENOMEM;
 			unlock();
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-			outc('G');
-			outc(':');
+
+			outString("\x1b[31mG:");
 			outWord(cntg);
 			outc('-');
 			outc('H');
+			outString("\x1b[37m");
 			return -1;
 			}
 //		outc('G');
@@ -199,6 +298,8 @@ int _write(int file, char *data, int len) {
 	outc('-');
 
 	outc('J');
+
+	outBufferStatus();
 
 // pending DMA? - we can not yet send - done
 	__TransferCompleteInterruptDisable();
@@ -219,22 +320,20 @@ int _write(int file, char *data, int len) {
 		ib->i_to = ib->i;
 		ib->i = ib->i_from;
 
-		ob->i_from = ib->i_to + 1;
-		if (ob->i_from >= BUFSIZE) ob->i_from = 0;
+		ob->i_from = ib->i_to;
 		ob->i = ob->i_from;
 		ob->n = 0;
 		ob->i_to = ib->i_from;
-		if (ob->i_to == 0) ob->i_to = BUFSIZE-1; else ob->i_to--;
 		}
 	else {
 		// buffer split
 		outc('P');
 		ob->i = ib->i;
-		ob->n = ob->i + 1;
+		ob->n = ob->i;
 		ob->i_from = 0;
-		ob->i_to = ib->i_from - 1;
+		ob->i_to = ib->i_from;
 
-		ib->i_to = BUFSIZE-1;
+		ib->i_to = 0;
 		ib->n = BUFSIZE - ib->i_from;
 		ib->i = ib->i_from;
 		}
@@ -245,6 +344,9 @@ int _write(int file, char *data, int len) {
 	__TransferCompleteInterruptEnable();
 	ob = ib;
 	unlock();
+
+	outBufferStatus();
+
 
 // setup DMA transfer
 	if (HAL_UART_Transmit_DMA(buffer.huart, &buffer.buf[ob->i_from], ob->n)!=HAL_OK) {
@@ -257,6 +359,11 @@ int _write(int file, char *data, int len) {
     	return len;
     	}
     }
+
+int _write(int file, char *data, int len) {
+	return writeInt(file, data, len);
+	}
+
 
 /*
 int _read(int file, char *data, int len) {

@@ -208,7 +208,6 @@ int main(void)
 
 	  GPIO_PinState x = HAL_GPIO_ReadPin(USER_KEY_PORT,USER_KEY_PIN);
 //	  HAL_GPIO_WritePin(GPIOA,GPIO_PIN_5,x);
-	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 //	  HAL_GPIO_TogglePin(LED_PORT,LED_PIN);
 
 	  hih8000_status = DAQU_start_HIH8000(&hi2c1);
@@ -451,6 +450,21 @@ int main(void)
 
 	  rc = HAL_TIM_IC_Stop_IT(&htim2, TIM_CHANNEL_1);
 	  if (rc!=0) printf("Stop error (rc = %d)\r\n",rc);
+
+
+
+	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
+
+	  uint32_t t = HAL_GetTick();
+	  uint32_t dt = 0;
+
+	  while (dt<1000) {
+		  STDIOC_idle();
+		  dt = HAL_GetTick()-t;
+	  	  }
+
+
+
 
 
   /* USER CODE END WHILE */
