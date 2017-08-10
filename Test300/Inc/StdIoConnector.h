@@ -11,7 +11,7 @@
 #include "stm32f4xx_hal.h"
 
 
-#define BUFSIZE 2048
+#define BUFSIZE 4096
 
 static enum EBufferStatus { stSuccess = 0, stIdle, stIn, stOut, stReady, stLocked, stBusy, stTimeout };
 
@@ -22,6 +22,7 @@ static struct TBufferStatus {
 	uint16_t i;			// current (next index to write to)
 	uint16_t n;			// number of bytes buffered by now
 	uint16_t i_to;		// end + 1 (excluding)
+	uint16_t i_flush;	// not yet executed flush excluding this position
 	};
 
 static struct TBuffer {

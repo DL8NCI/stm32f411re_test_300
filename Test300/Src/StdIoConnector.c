@@ -22,12 +22,14 @@ static void reset() {
 	buffer.b1.i = 0;				// ready to write on this index
 	buffer.b1.n = 0;				// nu,ber of bytes in buffer
 	buffer.b1.i_to = 0;				// excluding
+	buffer.b1.i_flush = 0;
 
 	buffer.b2.status = stIdle;
 	buffer.b2.i_from = 0;
 	buffer.b2.i = 0;
 	buffer.b2.n = 0;
 	buffer.b2.i_to = 0;
+	buffer.b2.i_flush = 0;
 
 	buffer.status = stReady;
 
@@ -59,6 +61,7 @@ void STDIOC_init_alt(UART_HandleTypeDef *_huart) {
 	}
 
 static void outBufferStatus() {
+/*
 	char b[200];
 	char s1,s2;
 
@@ -100,6 +103,7 @@ static void outBufferStatus() {
 			load);
 
 	if (l>0) outString(b);
+*/
 	}
 
 
@@ -189,7 +193,7 @@ void STDIOC_idle() {
 // any pending txDone event?
 	__TransferCompleteInterruptDisable();
 	if (buffer.nTXDone != 0) {
-		outc('Q');
+		outc('q');
 		ib = currentInBuffer();
 		ob = currentOutBuffer();
 
@@ -199,7 +203,7 @@ void STDIOC_idle() {
 			reset();
 			}
 		else {
-			outc('S');
+			outc('s');
 			ob->n = 0;
 			ob->i_from = ob->i_to;
 			ob->status = stIdle;
@@ -209,8 +213,57 @@ void STDIOC_idle() {
 
 		outBufferStatus();
 
+		if (ib->i_flush > ib->i_from) {
+
+			ob->i_from = ib->i_flush;
+			ob->i_flush = ob->i_from;
+			ob->i_to = ib->i_from;
+			ob->i = ib->i;
+			ob->n = ib->n - (ib->i_flush - ib->i_from);
+			ob->status = stIn;
+
+			ib->i_to = ib->i_flush;
+			ib->i_flush = ib->i_from;
+			ib->i = ib->i_from;
+			ib->n = ib->i_to - ib->i_from;
+			ib->status = stOut;
+			}
+		else if (ib->i_flush < ib->i_from) {
+			ob->i_from = 0;
+			ob->i_flush = ib->i_flush;
+			ob->i = ib->i;
+			ob->n = ib->i;
+			ob->i_to = ib->i_from;
+			ob->status = stIn;
+
+			ib->i_to = 0;
+			ib->i_flush = ib->i_from;
+			ib->i = ib->i_from;
+			ib->n = BUFSIZE - ib->i_from;
+			ib->status = stOut;
+			}
+		else {
+			outc('o');
+			__TransferCompleteInterruptEnable();
+			return;
+			}
+
+		ob = ib;
+
+		if (ob->n > 0) {
+			if (HAL_UART_Transmit_DMA(buffer.huart, &buffer.buf[ob->i_from], ob->n)!=HAL_OK) {
+				errno = EIO;
+				outc('m');
+		    	}
+			else {
+				outc('n');
+		    	}
+			}
+		else
+			ob->status = stIdle;
 		}
 	__TransferCompleteInterruptEnable();
+
 	}
 
 
@@ -291,6 +344,7 @@ int writeInt(int file, char *data, int len) {
 		ib->n++;
 		if (ib->i >= BUFSIZE) ib->i = 0;
 		}
+	ib->i_flush = ib->i;
 
 	outc('G');
 	outc(':');
@@ -305,6 +359,8 @@ int writeInt(int file, char *data, int len) {
 	__TransferCompleteInterruptDisable();
 	if (ob->status == stOut) {
 		__TransferCompleteInterruptEnable();
+
+
 		unlock();
 		outc('K');
 		return len;
@@ -324,6 +380,7 @@ int writeInt(int file, char *data, int len) {
 		ob->i = ob->i_from;
 		ob->n = 0;
 		ob->i_to = ib->i_from;
+		ob->i_flush = ob->i_from;
 		}
 	else {
 		// buffer split
@@ -332,6 +389,7 @@ int writeInt(int file, char *data, int len) {
 		ob->n = ob->i;
 		ob->i_from = 0;
 		ob->i_to = ib->i_from;
+		ob->i_flush = ib->i_flush;
 
 		ib->i_to = 0;
 		ib->n = BUFSIZE - ib->i_from;
