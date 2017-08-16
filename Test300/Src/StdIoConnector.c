@@ -22,7 +22,7 @@ static void reset() {
 	buffer.b1.i = 0;				// ready to write on this index
 	buffer.b1.n = 0;				// nu,ber of bytes in buffer
 	buffer.b1.i_to = 0;				// excluding
-	buffer.b1.i_flush = 0;
+	buffer.b1.i_flush = 0;			// Data up to i_flush are ready to be send (e.g. during next iteration
 
 	buffer.b2.status = stIdle;
 	buffer.b2.i_from = 0;
