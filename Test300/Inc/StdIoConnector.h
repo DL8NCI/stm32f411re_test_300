@@ -25,11 +25,9 @@ struct TBuffer {
 	volatile uint8_t n_tx_done;	// last buffer has been send out
 	UART_HandleTypeDef *huart;
 	DMA_HandleTypeDef *hdma_usart_tx;
-	UART_HandleTypeDef *huart_alt;
 	};
 
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx);
-void STDIOC_init_alt(UART_HandleTypeDef *_huart_alt);
 void STDIOC_idle();
 
 #endif /* STDIOCONNECTOR_H_ */

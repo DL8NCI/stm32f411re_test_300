@@ -166,7 +166,6 @@ int main(void)
 
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
-  STDIOC_init_alt(&huart1);
 
   VT100EraseScreen();
   VT100CursorHome();

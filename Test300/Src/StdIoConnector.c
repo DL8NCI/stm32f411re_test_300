@@ -16,10 +16,9 @@
 struct TBuffer buffer;
 
 
-static void outString(char *c);
 static void checkTransferComplete();
 static void copyToBuffer(char *data, int len);
-void checkSendBuffer();
+static void checkSendBuffer();
 
 
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
@@ -36,11 +35,6 @@ void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
 	buffer.n_tx_done = 0;
 	}
 
-
-void STDIOC_init_alt(UART_HandleTypeDef *_huart_alt) {
-	buffer.huart_alt = _huart_alt;
-	outString("\x1b[2J\x1b[H");
-	}
 
 
 void STDIOC_idle() {
@@ -74,12 +68,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
 	}
 
 
-static void outString(char *c) {
-//	uint16_t i = 0;
-//	while (c[i]!=0) outc(c[i++]);
-	}
-
-
 static void TransferCompleteInterruptDisable() {
 	buffer.hdma_usart_tx->Instance->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
 //	buffer.hdma_usart_tx->Instance->CR &= ~DMA_IT_TC;
@@ -92,7 +80,7 @@ static void TransferCompleteInterruptEnable() {
 	}
 
 
-void checkSendBuffer() {
+static void checkSendBuffer() {
 
 	uint16_t
 		tx_from,
@@ -149,25 +137,12 @@ static void checkTransferComplete() {
 
 static void copyToBuffer(char *data, int len) {
 
-	uint16_t cntg = 0;
-
 	for (uint16_t i = 0; i<len; i++) {
 		if (buffer.n == BUFSIZE) {
 			errno = ENOMEM;
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-
-			char b[200];
-			sprintf(b,"\x1b[31mG:%d-P\x1b[37m",cntg);
-			outString(b);
-//			outString("\x1b[31mG:");
-//			outWord(cntg);
-//			outc('-');
-//			outc('P');
-//			outString("\x1b[37m");
-//			for(;;) {}
 			return; // -1;
 			}
-		cntg++;
 		buffer.buf[buffer.i] = data[i];
 		buffer.i++;
 		buffer.n++;
