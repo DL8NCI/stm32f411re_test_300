@@ -19,7 +19,7 @@
 #define HIH8000_ST_COMMAND_MODE 2;
 
 
-typedef struct TDAQU_HIH8000_result {
+struct TDAQU_HIH8000_result {
 	uint8_t status;
 	uint16_t humidity;
 	uint16_t temperature;

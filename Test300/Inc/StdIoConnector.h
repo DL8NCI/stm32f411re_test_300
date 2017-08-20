@@ -10,48 +10,26 @@
 
 #include "stm32f4xx_hal.h"
 
-
 #define BUFSIZE 4096
 
-static enum EBufferStatus { stSuccess = 0, stIdle, stIn, stOut, stReady, stLocked, stBusy, stTimeout };
+// static enum EBufferStatus { stTXEmpty = 0, stSending, stSent };
 
-
-static struct TBufferStatus {
-	enum EBufferStatus status;
-	uint16_t i_from;	// start (including)
-	uint16_t i;			// current (next index to write to)
-	uint16_t n;			// number of bytes buffered by now
-	uint16_t i_to;		// end + 1 (excluding)
-	uint16_t i_flush;	// not yet executed flush excluding this position
-	};
-
-static struct TBuffer {
-	volatile enum EBufferStatus status;
-	volatile uint8_t nTXDone;
-	uint8_t buf[BUFSIZE];
-	struct TBufferStatus b1;
-	struct TBufferStatus b2;
+struct TBuffer {
+	uint8_t buf[BUFSIZE];		// the buffer array
+	uint16_t i_from;			// start (including)
+	uint16_t i;					// current (next index to write to)
+	uint16_t n;					// number of bytes buffered by now
+	uint16_t i_flush;			// not yet executed flush excluding this position
+	uint16_t n_flush;			// number of bytes to be flushed
+	uint16_t i_to;				// end + 1 (excluding)
+	volatile uint8_t n_tx_done;	// last buffer has been send out
 	UART_HandleTypeDef *huart;
 	DMA_HandleTypeDef *hdma_usart_tx;
+	UART_HandleTypeDef *huart_alt;
 	};
 
-static struct TBuffer buffer;
-static UART_HandleTypeDef *huart;
-
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx);
-
-//static void reset();
-//static struct TBufferStatus *currentInBuffer();
-//static struct TBufferStatus *currentOutBuffer();
-//static enum EBufferStatus lock(uint32_t timeout);
-//static void unlock();
-//static void __TransferCompleteInterruptDisable();
-//static void __TransferCompleteInterruptEnable();
-
-
-void STDIOC_init_alt(UART_HandleTypeDef *_huart);
-//static void outc(uint8_t c);
-
+void STDIOC_init_alt(UART_HandleTypeDef *_huart_alt);
 void STDIOC_idle();
 
 #endif /* STDIOCONNECTOR_H_ */

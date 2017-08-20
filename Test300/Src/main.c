@@ -191,6 +191,8 @@ int main(void)
  * IN14:PC4						CN10-34 (PC4)
  * IN15:PC5						CN10-6 (PC5)
  *
+ * Project Setup: http://www.openstm32.org/Importing+a+STCubeMX+generated+project
+ *
  */
 
   TStat st[N_CHANNELS];
@@ -455,16 +457,15 @@ int main(void)
 
 	  if (x==GPIO_PIN_RESET) HAL_Delay(1000); else HAL_Delay(500);
 
-	  uint32_t t = HAL_GetTick();
-	  uint32_t dt = 0;
+	  uint32_t t, dt;
+
+	  t = HAL_GetTick();
+	  dt = 0;
 
 	  while (dt<1000) {
 		  STDIOC_idle();
 		  dt = HAL_GetTick()-t;
 	  	  }
-
-
-
 
 
   /* USER CODE END WHILE */
