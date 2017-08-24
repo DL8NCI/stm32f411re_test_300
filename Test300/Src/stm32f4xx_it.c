@@ -36,6 +36,9 @@
 #include "stm32f4xx_it.h"
 
 /* USER CODE BEGIN 0 */
+//#include "StdIoConnector.h"
+
+//extern struct TBuffer buffer;
 
 /* USER CODE END 0 */
 

@@ -10,7 +10,7 @@
 
 #include "stm32f4xx_hal.h"
 
-#define BUFSIZE 4096
+#define BUFSIZE 1024
 
 // static enum EBufferStatus { stTXEmpty = 0, stSending, stSent };
 
@@ -22,6 +22,7 @@ struct TBuffer {
 	uint16_t i_flush;			// not yet executed flush excluding this position
 	uint16_t n_flush;			// number of bytes to be flushed
 	uint16_t i_to;				// end + 1 (excluding)
+	uint16_t n_capacity;		// total number of bytes which can be used for buffer
 	volatile uint8_t n_tx_done;	// last buffer has been send out
 	UART_HandleTypeDef *huart;
 	DMA_HandleTypeDef *hdma_usart_tx;
@@ -29,5 +30,6 @@ struct TBuffer {
 
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx);
 void STDIOC_idle();
+int STDIOC_getMaxOverflow();
 
 #endif /* STDIOCONNECTOR_H_ */

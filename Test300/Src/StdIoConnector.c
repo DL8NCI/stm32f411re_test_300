@@ -13,12 +13,17 @@
 // --> http://www.openstm32.org/Importing+a+STCubeMX+generated+project
 // --> http://wiki.eclipse.org/EGit/User_Guide#Creating_a_Repository
 
+int maxOverflow;
 struct TBuffer buffer;
 
+uint8_t checkTransferComplete();
+int copyToBuffer(char *data, int len);
+void checkSendBuffer();
+uint8_t getNTxDone();
+void setNTxDone(uint8_t x);
+uint32_t transferCompleteInterruptDisable();
+void transferCompleteInterruptRestore(uint32_t crBak);
 
-static void checkTransferComplete();
-static void copyToBuffer(char *data, int len);
-static void checkSendBuffer();
 
 
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
@@ -29,21 +34,31 @@ void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
 	buffer.i_flush = 0;
 	buffer.n_flush = 0;
 	buffer.i_to = 0;
+	buffer.n_capacity = BUFSIZE;
 
 	buffer.hdma_usart_tx = hdma_usart_tx;
 	buffer.huart = huart;
 	buffer.n_tx_done = 0;
+
+	maxOverflow = 0;
 	}
 
 
 
 void STDIOC_idle() {
-	checkTransferComplete();
+	if (checkTransferComplete() != 0) return;
 	checkSendBuffer();
 	}
 
+int STDIOC_getMaxOverflow() {
+	return maxOverflow;
+	}
 
 int _write(int file, char *data, int len) {
+
+	int idx = 0;
+	int m;
+	int n = len;
 
 	checkTransferComplete();
 	checkSendBuffer();
@@ -53,56 +68,69 @@ int _write(int file, char *data, int len) {
         return -1;
     	}
 
-	copyToBuffer(data,len);
-	checkSendBuffer();
+	do {
+		m = copyToBuffer(&data[idx],n);
+		n -= m;
+		idx += m;
+		checkSendBuffer();
 
-	return len;
+		// blocking mode if buffer has not enough capacity
+		if (n!=0) {
+			if (n>maxOverflow) maxOverflow = n;
+			while (checkTransferComplete()!=0) { }
+			checkSendBuffer();
+			}
+
+		} while (n!=0);
+
+	return idx;
     }
 
+uint32_t transferCompleteInterruptDisable() {
+	uint32_t crBak = buffer.hdma_usart_tx->Instance->CR & (DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
+	buffer.hdma_usart_tx->Instance->CR &= ~(crBak);
+	return crBak;
+	}
+
+void transferCompleteInterruptRestore(uint32_t crBak) {
+	if (crBak==0) return;
+	buffer.hdma_usart_tx->Instance->CR |= crBak;
+	}
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-//	if (huart->Instance != buffer.huart->Instance) return;
-// DMA transmission for TX is done
 	if (buffer.n_tx_done==1) buffer.n_tx_done = 2;
-//	HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_5);
 	}
 
 
-static void TransferCompleteInterruptDisable() {
-	buffer.hdma_usart_tx->Instance->CR &= ~(DMA_IT_TC | DMA_IT_TE | DMA_IT_DME);
-//	buffer.hdma_usart_tx->Instance->CR &= ~DMA_IT_TC;
+uint8_t getNTxDone() {
+	volatile uint32_t crBak = transferCompleteInterruptDisable();
+	uint8_t n_tx_done = buffer.n_tx_done;
+	transferCompleteInterruptRestore(crBak);
+    return n_tx_done;
+	}
+
+void setNTxDone(uint8_t x) {
+	volatile uint32_t crBak = transferCompleteInterruptDisable();
+	buffer.n_tx_done = x;
+	transferCompleteInterruptRestore(crBak);
 	}
 
 
-static void TransferCompleteInterruptEnable() {
-	buffer.hdma_usart_tx->Instance->CR |= DMA_IT_TC | DMA_IT_TE | DMA_IT_DME;
-//	buffer.hdma_usart_tx->Instance->CR |= DMA_IT_TC;
-	}
-
-
-static void checkSendBuffer() {
+void checkSendBuffer() {
 
 	uint16_t
 		tx_from,
-		tx_n,
-		i_flush,
-		n_tx_done;
+		tx_n;
 
-	TransferCompleteInterruptDisable();
-	n_tx_done = buffer.n_tx_done;
-	TransferCompleteInterruptEnable();
-
-	if (n_tx_done!=0) return;			// tx pending
+	if (getNTxDone() != 0) return;		// tx pending
 	if (buffer.n_flush == 0) return;	// nothing to send
 
-	buffer.n_tx_done = 1;
-	i_flush = buffer.i_flush;
-	if (i_flush==0) i_flush = BUFSIZE;
+	setNTxDone(1);
 
 	tx_from = buffer.i_from;
 
 	// with or without wrap around
-	if (i_flush > buffer.i_from) {
+	if ((buffer.i_flush > buffer.i_from) || (buffer.i_flush == 0)) {
 		tx_n = buffer.n_flush;
 		buffer.i_from = buffer.i_flush;
 		}
@@ -113,6 +141,7 @@ static void checkSendBuffer() {
 
 	buffer.n -= tx_n;
 	buffer.n_flush -= tx_n;
+	buffer.n_capacity = BUFSIZE - tx_n;
 
 	if (HAL_UART_Transmit_DMA(buffer.huart, &buffer.buf[tx_from], tx_n)!=HAL_OK) {
 		errno = EIO;
@@ -121,27 +150,24 @@ static void checkSendBuffer() {
 	}
 
 
-static void checkTransferComplete() {
-	uint16_t n_tx_done;
-
-	TransferCompleteInterruptDisable();
-	n_tx_done = buffer.n_tx_done;
-	TransferCompleteInterruptEnable();
-
-	if (n_tx_done != 2) return;
-
+uint8_t checkTransferComplete() {
+	uint8_t n_tx_done = getNTxDone();
+	if (n_tx_done != 2) return n_tx_done;
 	buffer.i_to = buffer.i_from;
-	buffer.n_tx_done = 0;
+	buffer.n_capacity = BUFSIZE;
+	setNTxDone(0);
+	return 0;
 	}
 
-
-static void copyToBuffer(char *data, int len) {
+/* copies from data to buffer.buf[] at most len bytes.
+ * returns index in buf where to continue
+ */
+int copyToBuffer(char *data, int len) {
 
 	for (uint16_t i = 0; i<len; i++) {
-		if (buffer.n == BUFSIZE) {
-			errno = ENOMEM;
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
-			return; // -1;
+		if (buffer.n == buffer.n_capacity) {
+			buffer.i_flush = buffer.i;
+			return i;
 			}
 		buffer.buf[buffer.i] = data[i];
 		buffer.i++;
@@ -150,6 +176,7 @@ static void copyToBuffer(char *data, int len) {
 		if (buffer.i >= BUFSIZE) buffer.i = 0;
 		}
 	buffer.i_flush = buffer.i;
+	return len;
 	}
 
 

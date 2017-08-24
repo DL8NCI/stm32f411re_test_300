@@ -172,6 +172,11 @@ int main(void)
 
   printf("The quick brown fox jumps over the lazy dog back\r\n");
 
+  HAL_Delay(3000);
+  VT100EraseScreen();
+  VT100CursorHome();
+
+
 /* Pinbelegung
  *
  * Funktion   Arduino           morpho
@@ -418,6 +423,7 @@ int main(void)
 //	  htim2.Instance->SR = 0;
 
 	  rc = HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_1);
+
 	  if (rc==0) {
 
 		  uint32_t t = HAL_GetTick();
@@ -431,8 +437,9 @@ int main(void)
 		  	  dt = HAL_GetTick() - t;
 		  	  } while (trigger_detected<11 && (dt<100));
 
+		  uint16_t ov = STDIOC_getMaxOverflow();
 		  if (dt<100) {
-			  printf("cnt = %ld\r\n",counter_2_1);
+			  printf("cnt = %ld     ovr = %d\r\n",counter_2_1, ov);
 			  double m = 12.90322580645162; // uT/us
 			  double t = -151.9354838709678; // uT
 			  double tcorr = 1.0/(0.015 + (10*96.0)/(double)counter_2_1);
@@ -441,7 +448,7 @@ int main(void)
 			  printf("T   = %6.3f us     Tcorr = %6.3f us     B = %7.3f uT\r\n",(double)counter_2_1/(10*96.0), tcorr, b );
 		  	  }
 		  else {
-			  printf("Timeout - cnt = %ld\r\n",htim2.Instance->CNT);
+			  printf("Timeout - cnt = %ld     ovr = %d\r\n",htim2.Instance->CNT, ov);
 		  	  }
 	  	  }
 	  else {
