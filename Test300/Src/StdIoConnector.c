@@ -9,6 +9,10 @@
 #include <sys/unistd.h>
 #include <errno.h>
 
+#include "ArduinoPins.h"
+#include "stm32f4xx_hal.h"
+
+
 
 // --> http://www.openstm32.org/Importing+a+STCubeMX+generated+project
 // --> http://wiki.eclipse.org/EGit/User_Guide#Creating_a_Repository
@@ -16,11 +20,22 @@
 int maxOverflow;
 struct TBuffer buffer;
 
+UART_HandleTypeDef *diag;
+
+
 uint8_t checkTransferComplete();
 int copyToBuffer(char *data, int len);
 void checkSendBuffer();
 uint8_t getNTxDone();
 void setNTxDone(uint8_t x);
+
+void STDIOC_putChar(uint8_t b);
+void STDIOC_TxComplete();
+
+
+uint8_t getCnt();
+void clrCnt();
+
 uint32_t transferCompleteInterruptDisable();
 void transferCompleteInterruptRestore(uint32_t crBak);
 
@@ -40,9 +55,18 @@ void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx) {
 	buffer.huart = huart;
 	buffer.n_tx_done = 0;
 
+	buffer.cnt = 0;
+
 	maxOverflow = 0;
 	}
 
+void STDIOC_initDiag(UART_HandleTypeDef *huart) {
+	diag = huart;
+	}
+
+void STDIOC_putChar(uint8_t b) {
+	HAL_StatusTypeDef rc = HAL_UART_Transmit(diag, &b, 1, 100);
+	}
 
 
 void STDIOC_idle() {
@@ -97,8 +121,23 @@ void transferCompleteInterruptRestore(uint32_t crBak) {
 	buffer.hdma_usart_tx->Instance->CR |= crBak;
 	}
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+void STDIOC_TxComplete() {
 	if (buffer.n_tx_done==1) buffer.n_tx_done = 2;
+	buffer.cnt++;
+	}
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	if(((huart->hdmatx->Instance->CR) & (uint32_t)(DMA_SxCR_DBM)) != RESET) STDIOC_putChar('D'); // double memory mode
+	if ((huart->hdmatx->Instance->CR & DMA_SxCR_CIRC) != RESET) STDIOC_putChar('C'); // circular mode
+//	HAL_GPIO_WritePin(LED_PORT,LED_PIN,GPIO_PIN_RESET);
+
+	if (buffer.n_tx_done==1) buffer.n_tx_done = 2;
+	buffer.cnt++;
+	if (buffer.cnt!=1) {
+		if (buffer.cnt<10) STDIOC_putChar(buffer.cnt+0x30); else STDIOC_putChar('Y');
+		}
+//	HAL_GPIO_WritePin(LED_PORT,LED_PIN,GPIO_PIN_SET);
 	}
 
 
@@ -116,6 +155,21 @@ void setNTxDone(uint8_t x) {
 	}
 
 
+
+void clrCnt() {
+	volatile uint32_t crBak = transferCompleteInterruptDisable();
+	buffer.cnt = 0;
+	transferCompleteInterruptRestore(crBak);
+	}
+
+uint8_t getCnt() {
+	volatile uint32_t crBak = transferCompleteInterruptDisable();
+	uint8_t cnt = buffer.cnt;
+	transferCompleteInterruptRestore(crBak);
+    return cnt;
+	}
+
+
 void checkSendBuffer() {
 
 	uint16_t
@@ -126,6 +180,7 @@ void checkSendBuffer() {
 	if (buffer.n_flush == 0) return;	// nothing to send
 
 	setNTxDone(1);
+	HAL_GPIO_WritePin(LED_PORT,LED_PIN,GPIO_PIN_SET);
 
 	tx_from = buffer.i_from;
 
@@ -155,6 +210,10 @@ uint8_t checkTransferComplete() {
 	if (n_tx_done != 2) return n_tx_done;
 	buffer.i_to = buffer.i_from;
 	buffer.n_capacity = BUFSIZE;
+
+	uint8_t h = getCnt();
+	if (h!=1) STDIOC_putChar('X');
+	clrCnt();
 	setNTxDone(0);
 	return 0;
 	}

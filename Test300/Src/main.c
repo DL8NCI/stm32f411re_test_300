@@ -152,6 +152,7 @@ int main(void)
   // PB2: !CS for MCP3204 (12 bit ADC)
   itd.Pin = CS_3204_PIN;
   HAL_GPIO_Init(CS_3204_PORT,&itd);
+
   // deselect MCP3204
   HAL_GPIO_WritePin(CS_3204_PORT,CS_3204_PIN,GPIO_PIN_SET);
 
@@ -166,6 +167,7 @@ int main(void)
 
 
   STDIOC_init(&huart2,&hdma_usart2_tx);
+  STDIOC_initDiag(&huart1);
 
   VT100EraseScreen();
   VT100CursorHome();

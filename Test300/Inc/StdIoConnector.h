@@ -24,11 +24,13 @@ struct TBuffer {
 	uint16_t i_to;				// end + 1 (excluding)
 	uint16_t n_capacity;		// total number of bytes which can be used for buffer
 	volatile uint8_t n_tx_done;	// last buffer has been send out
+	volatile uint8_t cnt;
 	UART_HandleTypeDef *huart;
 	DMA_HandleTypeDef *hdma_usart_tx;
 	};
 
 void STDIOC_init(UART_HandleTypeDef *huart, DMA_HandleTypeDef *hdma_usart_tx);
+void STDIOC_initDiag(UART_HandleTypeDef *huart);
 void STDIOC_idle();
 int STDIOC_getMaxOverflow();
 
